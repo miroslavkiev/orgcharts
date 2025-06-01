@@ -1,5 +1,5 @@
 import React, { useState } from 'react'
-import { Handle } from 'react-flow-renderer'
+import { Handle } from 'reactflow'
 import avatar from '../assets/avatar.svg'
 
 export default function EmployeeNode({ data }) {
