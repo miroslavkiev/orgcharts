@@ -71,11 +71,15 @@ export default function useOrgChart(rows) {
   useEffect(() => {
     const elk = new ELK()
     const layout = async () => {
+      const verticalSpacing = Math.max(window.innerHeight * 0.05, 60, 80)
+      const horizontalSpacing = Math.max(window.innerWidth * 0.05, 60)
       const graphDef = {
         id: 'root',
         layoutOptions: {
           'elk.algorithm': 'layered',
-          'elk.direction': 'DOWN'
+          'elk.direction': 'DOWN',
+          'elk.spacing.nodeNodeBetweenLayers': verticalSpacing,
+          'elk.spacing.nodeNode': horizontalSpacing
         },
         children: nodes.map(n => ({ id: n.id, width: 180, height: 120 })),
         edges: edges.map(e => ({ id: e.id, sources: [e.source], targets: [e.target] }))
@@ -93,7 +97,7 @@ export default function useOrgChart(rows) {
             if (c.x > maxX) maxX = c.x
           }
         })
-        const offset = 300
+        const offset = horizontalSpacing * 5
 
         setGraph({
           nodes: nodes.map(n => {
