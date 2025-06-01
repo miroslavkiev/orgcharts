@@ -1,35 +1,11 @@
 import { useTranslation } from "react-i18next"
-import React, { useCallback, useEffect, useMemo } from 'react'
+import React, { useCallback, useEffect } from 'react'
 import ReactFlow, { Controls, MiniMap } from 'reactflow'
 import EmployeeNode from './EmployeeNode'
 
 export default function OrgCanvas({ org }) {
   const { t } = useTranslation()
-  const { nodes, edges } = useMemo(() => {
-    const n = []
-    const e = []
-
-    const traverse = (emp, parentId) => {
-      const id = emp.fullName
-      const collapsed = org.collapsed[id]
-      n.push({
-        id,
-        type: 'employee',
-        position: { x: 0, y: 0 },
-        data: { emp, collapsed, toggle: () => org.toggleNode(id) }
-      })
-      if (parentId) {
-        e.push({ id: `${parentId}-${id}`, source: parentId, target: id })
-      }
-      if (!collapsed) {
-        emp.children.forEach(c => traverse(c, id))
-      }
-    }
-
-    org.roots.forEach(r => traverse(r, null))
-
-    return { nodes: n, edges: e }
-  }, [org])
+  const { nodes, edges } = org
 
   const nodeTypes = {
     employee: EmployeeNode
