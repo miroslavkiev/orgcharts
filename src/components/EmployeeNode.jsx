@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react'
+import React, { useEffect } from 'react'
 import { Handle, Position, useReactFlow } from 'reactflow'
 import {
   ChevronDownIcon,
@@ -11,8 +11,7 @@ import isValid from '../utils/isValid'
 
 export default function EmployeeNode({ id, data }) {
   const { updateNodeInternals } = useReactFlow()
-  const { emp, collapsed, toggle, expanded, toggleExpand } = data
-  const [imgSrc, setImgSrc] = useState(emp['Photo URL'] || emp.photo || defaultAvatar)
+  const { emp, collapsed, toggle, expanded, toggleExpand, photoURL } = data
 
   useEffect(() => {
     updateNodeInternals?.(id)
@@ -26,11 +25,11 @@ export default function EmployeeNode({ id, data }) {
           {collapsed ? <PlusIcon width={18} /> : <MinusIcon width={18} />}
         </button>
         <img
-          src={imgSrc}
-          alt=""
+          src={photoURL || defaultAvatar}
+          alt="avatar"
           width={80}
           height={80}
-          onError={() => setImgSrc(defaultAvatar)}
+          onError={e => (e.currentTarget.src = defaultAvatar)}
         />
         <h2>{emp.fullName || emp['Name Surname']}</h2>
         <div className="title">{emp.title || emp['Job Title']}</div>
