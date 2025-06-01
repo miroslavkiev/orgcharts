@@ -15,8 +15,13 @@ function buildForest(rows) {
     const mgrName = emp['Manager']?.trim()
     if (mgrName) {
       const mgr = map.get(mgrName)
-      if (mgr) mgr.children.push(emp)
-      else orphans.push(emp)
+      if (mgr) {
+        mgr.children.push(emp)
+      } else {
+        emp.noManager = true
+        orphans.push(emp)
+        roots.push(emp)
+      }
     } else {
       roots.push(emp)
     }
@@ -26,21 +31,25 @@ function buildForest(rows) {
 }
 
 export default function useOrgChart(rows) {
-const { map, roots, orphans } = useMemo(() => buildForest(rows), [rows])
+  const { map, roots, orphans } = useMemo(() => buildForest(rows), [rows])
 
-const [ui, setUi] = useReducer((s, a) => ({ ...s, ...a }), {})
+  const [collapsed, setCollapsed] = useReducer((s, a) => ({ ...s, ...a }), {})
+
+  const toggleNode = id => {
+    setCollapsed({ [id]: !collapsed[id] })
+  }
 
   const expandAll = () => {
     const updates = {}
-    map.forEach((_, k) => { updates[k] = true })
-    setUi(updates)
+    map.forEach((_, k) => { updates[k] = false })
+    setCollapsed(updates)
   }
 
   const collapseAll = () => {
     const updates = {}
-    map.forEach((_, k) => { updates[k] = false })
-    setUi(updates)
+    map.forEach((_, k) => { updates[k] = true })
+    setCollapsed(updates)
   }
 
-  return { map, roots, orphans, ui, setUi, expandAll, collapseAll }
+  return { map, roots, orphans, collapsed, toggleNode, expandAll, collapseAll }
 }
