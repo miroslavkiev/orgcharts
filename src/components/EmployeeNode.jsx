@@ -8,6 +8,8 @@ export default function EmployeeNode({ data }) {
   const [imgSrc, setImgSrc] = useState(emp['Photo URL'] || avatar)
   const [show, setShow] = useState(false)
 
+  const isValid = value => value !== undefined && value !== null && value !== '' && value !== 'N/A'
+
   return (
     <div className={`employee-node${show ? ' expanded' : ''}`}>
       <Handle type="target" position="top" />
@@ -28,7 +30,8 @@ export default function EmployeeNode({ data }) {
             if (Array.isArray(v) || (v && typeof v === 'object')) {
               display = JSON.stringify(v)
             }
-            return <div key={k}><strong>{k}:</strong> {display || 'N/A'}</div>
+            if (!isValid(display)) return null
+            return <div key={k}><strong>{k}:</strong> {display}</div>
           })}
         </div>
       )}
