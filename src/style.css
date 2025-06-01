@@ -25,8 +25,9 @@ button:focus {
   border-radius: 12px;
   padding: 16px;
   box-shadow: 0px 4px 10px rgba(0, 0, 0, 0.05);
+  width: 240px;
   min-width: 240px;
-  max-width: 20vw;
+  max-width: 240px;
   transition: all 0.3s ease;
   display: flex;
   flex-direction: column;
@@ -38,7 +39,6 @@ button:focus {
 }
 
 .employee-node.expanded {
-  width: fit-content;
   position: relative;
   z-index: 1;
 }
