@@ -1,6 +1,25 @@
 import { useMemo, useReducer, useEffect, useState } from 'react'
 import ELK from 'elkjs/lib/elk.bundled.js'
 
+const BASE_HEIGHT = 140
+const LINE_HEIGHT = 22
+
+function countExtraFields(employee) {
+  return Object.entries(employee).filter(([key, val]) =>
+    key !== 'Name Surname' &&
+    key !== 'Job Title' &&
+    key !== 'Manager' &&
+    key !== 'children' &&
+    typeof val === 'string' &&
+    val.trim() !== '' &&
+    val !== 'N/A'
+  ).length
+}
+
+function getNodeHeight(employee) {
+  return BASE_HEIGHT + countExtraFields(employee) * LINE_HEIGHT
+}
+
 function buildForest(rows) {
   const map = new Map()
   const roots = []
@@ -53,6 +72,8 @@ export default function useOrgChart(rows) {
         id,
         type: 'employee',
         position: { x: 0, y: 0 },
+        width: 220,
+        height: getNodeHeight(emp),
         data: { emp, collapsed: isCollapsed, toggle: () => toggleNode(id), fromOrphanRoot }
       })
       if (parentId) {
@@ -82,7 +103,11 @@ export default function useOrgChart(rows) {
           'elk.spacing.nodeNodeBetweenLayers': verticalSpacing,
           'elk.spacing.nodeNode': horizontalSpacing
         },
-        children: nodes.map(n => ({ id: n.id, width: 180, height: 120 })),
+        children: nodes.map(n => ({
+          id: n.id,
+          width: 220,
+          height: getNodeHeight(n.data.emp)
+        })),
         edges: edges.map(e => ({ id: e.id, sources: [e.source], targets: [e.target] }))
       }
       try {
