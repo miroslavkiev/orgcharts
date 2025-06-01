@@ -79,7 +79,7 @@ export default function useOrgChart(rows) {
         id,
         type: 'employee',
         position: positions[id] ? { x: positions[id].x, y: positions[id].y } : { x: 0, y: 0 },
-        width: 220,
+        width: 240,
         height: getNodeHeight(emp, isExpanded),
         draggable: true,
         data: {
@@ -120,7 +120,7 @@ export default function useOrgChart(rows) {
         },
         children: nodes.map(n => ({
           id: n.id,
-          width: 220,
+          width: 240,
           height: n.height
         })),
         edges: edges.map(e => ({ id: e.id, sources: [e.source], targets: [e.target] }))

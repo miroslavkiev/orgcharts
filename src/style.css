@@ -1,7 +1,7 @@
 @import 'reactflow/dist/style.css';
 :root {
   font-family: 'Inter', sans-serif;
-  --accent: #ff6b00;
+  --accent: #f37021;
 }
 
 body {
@@ -24,17 +24,17 @@ button:focus {
   border: 1px solid #e1e4e8;
   border-radius: 12px;
   padding: 16px;
-  box-shadow: 0 2px 8px rgba(0,0,0,0.04);
-  max-width: 480px;
+  box-shadow: 0px 4px 10px rgba(0, 0, 0, 0.05);
+  min-width: 240px;
+  max-width: 20vw;
   transition: all 0.3s ease;
   display: flex;
   flex-direction: column;
   align-items: center;
-  overflow: hidden;
 }
 
 .employee-node:hover {
-  box-shadow: 0 4px 16px rgba(0,0,0,0.1);
+  box-shadow: 0px 4px 10px rgba(0, 0, 0, 0.05);
 }
 
 .employee-node.expanded {
@@ -67,7 +67,7 @@ button:focus {
   background-color: transparent;
   border: none;
   cursor: pointer;
-  color: #ff6b00;
+  color: var(--accent);
   border-radius: 8px;
   transition: box-shadow 0.2s ease;
 }
