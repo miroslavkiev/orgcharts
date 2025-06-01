@@ -33,14 +33,17 @@ export default function OrgCanvas({ org }) {
         <Controls />
         <MiniMap />
       </ReactFlow>
-      {org.orphans.length > 0 && (
-        <div style={{ margin: 20, fontSize: 12, opacity: 0.7 }}>
-          <h3>{t('unassigned')}</h3>
-          {org.orphans.map(o => (
-            <div key={o.fullName}>{o.fullName}</div>
-          ))}
-        </div>
-      )}
+      {(() => {
+        const missing = org.orphans.filter(o => !nodes.some(n => n.id === o.fullName))
+        return missing.length > 0 ? (
+          <div style={{ margin: 20, fontSize: 12, opacity: 0.7 }}>
+            <h3>{t('unassigned')}</h3>
+            {missing.map(o => (
+              <div key={o.fullName}>{o.fullName}</div>
+            ))}
+          </div>
+        ) : null
+      })()}
     </div>
   )
 }

@@ -22,11 +22,14 @@ export default function EmployeeNode({ data }) {
       </div>
       {show && (
         <div className="details">
-          {Object.entries(emp).map(([k, v]) => (
-            k !== 'Name Surname' && k !== 'Job Title' && k !== 'Manager' && (
-              <div key={k}><strong>{k}:</strong> {v || 'N/A'}</div>
-            )
-          ))}
+          {Object.entries(emp).map(([k, v]) => {
+            if (k === 'Name Surname' || k === 'Job Title' || k === 'Manager' || k === 'children') return null
+            let display = v
+            if (Array.isArray(v) || (v && typeof v === 'object')) {
+              display = JSON.stringify(v)
+            }
+            return <div key={k}><strong>{k}:</strong> {display || 'N/A'}</div>
+          })}
         </div>
       )}
       <Handle type="source" position="bottom" />

@@ -46,24 +46,24 @@ export default function useOrgChart(rows) {
     const n = []
     const e = []
 
-    const traverse = (emp, parentId) => {
+    const traverse = (emp, parentId, fromOrphanRoot) => {
       const id = emp.fullName
       const isCollapsed = collapsed[id]
       n.push({
         id,
         type: 'employee',
         position: { x: 0, y: 0 },
-        data: { emp, collapsed: isCollapsed, toggle: () => toggleNode(id) }
+        data: { emp, collapsed: isCollapsed, toggle: () => toggleNode(id), fromOrphanRoot }
       })
       if (parentId) {
         e.push({ id: `${parentId}-${id}`, source: parentId, target: id })
       }
       if (!isCollapsed) {
-        emp.children.forEach(c => traverse(c, id))
+        emp.children.forEach(c => traverse(c, id, fromOrphanRoot))
       }
     }
 
-    roots.forEach(r => traverse(r, null))
+    roots.forEach(r => traverse(r, null, r.noManager))
 
     return { nodes: n, edges: e }
   }, [roots, collapsed])
@@ -73,7 +73,10 @@ export default function useOrgChart(rows) {
     const layout = async () => {
       const graphDef = {
         id: 'root',
-        layoutOptions: { 'elk.algorithm': 'layered' },
+        layoutOptions: {
+          'elk.algorithm': 'layered',
+          'elk.direction': 'DOWN'
+        },
         children: nodes.map(n => ({ id: n.id, width: 180, height: 120 })),
         edges: edges.map(e => ({ id: e.id, sources: [e.source], targets: [e.target] }))
       }
@@ -81,8 +84,25 @@ export default function useOrgChart(rows) {
         const res = await elk.layout(graphDef)
         const positions = {}
         res.children?.forEach(c => { positions[c.id] = { x: c.x, y: c.y } })
+
+        // Find max X among nodes that are not part of an orphan tree
+        let maxX = 0
+        res.children?.forEach(c => {
+          const node = nodes.find(n => n.id === c.id)
+          if (node && !node.data.fromOrphanRoot) {
+            if (c.x > maxX) maxX = c.x
+          }
+        })
+        const offset = 300
+
         setGraph({
-          nodes: nodes.map(n => ({ ...n, position: positions[n.id] || { x: 0, y: 0 } })),
+          nodes: nodes.map(n => {
+            let pos = positions[n.id] || { x: 0, y: 0 }
+            if (n.data.fromOrphanRoot) {
+              pos = { x: maxX + offset + pos.x, y: pos.y }
+            }
+            return { ...n, position: pos }
+          }),
           edges
         })
       } catch (err) {
