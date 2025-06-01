@@ -26,9 +26,9 @@ function buildForest(rows) {
 }
 
 export default function useOrgChart(rows) {
-  const [{ map, roots, orphans }, dispatch] = useMemo(() => buildForest(rows), [rows])
+const { map, roots, orphans } = useMemo(() => buildForest(rows), [rows])
 
-  const [ui, setUi] = useReducer((s, a) => ({ ...s, ...a }), {})
+const [ui, setUi] = useReducer((s, a) => ({ ...s, ...a }), {})
 
   const expandAll = () => {
     const updates = {}
