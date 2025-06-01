@@ -11,9 +11,14 @@
     "react": "^18.2.0",
     "react-dom": "^18.2.0",
     "papaparse": "^5.4.1",
+<<<<<<< HEAD
     "reactflow": "^11.10.0",
     "react-i18next": "^13.0.0",
     "i18next": "^22.4.9",
+=======
+    "react-i18next": "^13.0.0",
+    "i18next": "^23.5.1",
+>>>>>>> 40560ec (fixed package.json)
     "@heroicons/react": "^2.0.18",
     "react-hot-toast": "^2.4.1",
     "react-zoom-pan-pinch": "^2.1.3"
