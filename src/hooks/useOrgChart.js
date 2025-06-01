@@ -16,8 +16,8 @@ function countExtraFields(employee) {
   ).length
 }
 
-function getNodeHeight(employee) {
-  return BASE_HEIGHT + countExtraFields(employee) * LINE_HEIGHT
+function getNodeHeight(employee, expanded) {
+  return expanded ? BASE_HEIGHT + countExtraFields(employee) * LINE_HEIGHT : BASE_HEIGHT
 }
 
 function buildForest(rows) {
@@ -54,11 +54,17 @@ export default function useOrgChart(rows) {
   const { map, roots, orphans } = useMemo(() => buildForest(rows), [rows])
 
   const [collapsed, setCollapsed] = useReducer((s, a) => ({ ...s, ...a }), {})
+  const [expanded, setExpanded] = useReducer((s, a) => ({ ...s, ...a }), {})
+  const [positions, setPositions] = useState({})
 
   const [graph, setGraph] = useState({ nodes: [], edges: [] })
 
   const toggleNode = id => {
     setCollapsed({ [id]: !collapsed[id] })
+  }
+
+  const toggleExpand = id => {
+    setExpanded({ [id]: !expanded[id] })
   }
 
   const { nodes, edges } = useMemo(() => {
@@ -68,13 +74,22 @@ export default function useOrgChart(rows) {
     const traverse = (emp, parentId, fromOrphanRoot) => {
       const id = emp.fullName
       const isCollapsed = collapsed[id]
+      const isExpanded = expanded[id]
       n.push({
         id,
         type: 'employee',
-        position: { x: 0, y: 0 },
+        position: positions[id] ? { x: positions[id].x, y: positions[id].y } : { x: 0, y: 0 },
         width: 220,
-        height: getNodeHeight(emp),
-        data: { emp, collapsed: isCollapsed, toggle: () => toggleNode(id), fromOrphanRoot }
+        height: getNodeHeight(emp, isExpanded),
+        draggable: true,
+        data: {
+          emp,
+          collapsed: isCollapsed,
+          toggle: () => toggleNode(id),
+          expanded: isExpanded,
+          toggleExpand: () => toggleExpand(id),
+          fromOrphanRoot
+        }
       })
       if (parentId) {
         e.push({ id: `${parentId}-${id}`, source: parentId, target: id })
@@ -87,7 +102,7 @@ export default function useOrgChart(rows) {
     roots.forEach(r => traverse(r, null, r.noManager))
 
     return { nodes: n, edges: e }
-  }, [roots, collapsed])
+  }, [roots, collapsed, expanded, positions])
 
   useEffect(() => {
     const elk = new ELK()
@@ -106,14 +121,14 @@ export default function useOrgChart(rows) {
         children: nodes.map(n => ({
           id: n.id,
           width: 220,
-          height: getNodeHeight(n.data.emp)
+          height: n.height
         })),
         edges: edges.map(e => ({ id: e.id, sources: [e.source], targets: [e.target] }))
       }
       try {
         const res = await elk.layout(graphDef)
-        const positions = {}
-        res.children?.forEach(c => { positions[c.id] = { x: c.x, y: c.y } })
+        const layoutPositions = {}
+        res.children?.forEach(c => { layoutPositions[c.id] = { x: c.x, y: c.y } })
 
         // Find max X among nodes that are not part of an orphan tree
         let maxX = 0
@@ -125,16 +140,21 @@ export default function useOrgChart(rows) {
         })
         const offset = horizontalSpacing * 5
 
+        const newPositions = { ...positions }
         setGraph({
           nodes: nodes.map(n => {
-            let pos = positions[n.id] || { x: 0, y: 0 }
+            let pos = layoutPositions[n.id] || { x: 0, y: 0 }
             if (n.data.fromOrphanRoot) {
               pos = { x: maxX + offset + pos.x, y: pos.y }
             }
-            return { ...n, position: pos }
+            const manual = positions[n.id]?.manual
+            const finalPos = manual ? { x: positions[n.id].x, y: positions[n.id].y } : pos
+            newPositions[n.id] = { x: finalPos.x, y: finalPos.y, manual: manual || false }
+            return { ...n, position: finalPos }
           }),
           edges
         })
+        setPositions(newPositions)
       } catch (err) {
         setGraph({ nodes, edges })
       }
@@ -154,5 +174,25 @@ export default function useOrgChart(rows) {
     setCollapsed(updates)
   }
 
-  return { map, roots, orphans, collapsed, nodes: graph.nodes, edges: graph.edges, toggleNode, expandAll, collapseAll }
+  const setManualPosition = (id, pos) => {
+    setPositions(p => ({
+      ...p,
+      [id]: { x: pos.x, y: pos.y, manual: true }
+    }))
+  }
+
+  return {
+    map,
+    roots,
+    orphans,
+    collapsed,
+    expanded,
+    nodes: graph.nodes,
+    edges: graph.edges,
+    toggleNode,
+    toggleExpand,
+    setManualPosition,
+    expandAll,
+    collapseAll
+  }
 }

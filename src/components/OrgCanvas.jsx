@@ -21,6 +21,15 @@ export default function OrgCanvas({ org }) {
     }
   }, [org.controls, org.roots.length])
 
+  useEffect(() => {
+    nodes.forEach(n => org.controls?.updateNodeInternals(n.id))
+  }, [nodes])
+
+  const handleDragStop = (e, node) => {
+    org.setManualPosition(node.id, node.position)
+    org.controls?.updateNodeInternals(node.id)
+  }
+
   return (
     <div style={{ width: '100%', height: '80vh' }}>
       <ReactFlow
@@ -28,6 +37,7 @@ export default function OrgCanvas({ org }) {
         edges={edges}
         nodeTypes={nodeTypes}
         onInit={onInit}
+        onNodeDragStop={handleDragStop}
         fitView
       >
         <Controls />
