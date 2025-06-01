@@ -1,0 +1,5 @@
+Name Surname,Manager,Job Title,Department,Country,Business Address,Location,Mobile,Work Phone,Email,Comments,Last updated,Photo URL
+Alice Brown,,CEO,Executive,UK,London,Head Office,,+44 20 1234 5678,alice@example.com,,2023-01-01,
+Bob Smith,Alice Brown,CTO,Technology,UK,London,Head Office,,,+44 20 1234 5679,bob@example.com,,2023-01-01,
+Charlie Davis,Bob Smith,Dev Lead,Technology,UK,Remote,,,+44 20 1234 5680,charlie@example.com,,2023-01-01,
+Orphan Employee,Unknown Manager,Designer,Design,UK,Remote,,,+44 20 1234 5681,orphan@example.com,,2023-01-01,
