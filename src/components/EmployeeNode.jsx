@@ -13,14 +13,15 @@ function EmployeeNode({ id, data }) {
   const { updateNodeInternals } = useReactFlow()
   const { emp, collapsed, toggle, expanded, toggleExpand, photoURL } = data
 
+  // Update dimensions in ReactFlow when extra info is toggled
   useEffect(() => {
     updateNodeInternals?.(id)
-  }, [collapsed, expanded])
+  }, [expanded])
 
   return (
     <div className={`employee-node ${collapsed ? 'collapsed' : ''} ${expanded ? 'expanded' : ''}`}>
       <Handle type="target" position={Position.Top} />
-      <div style={{ textAlign: 'center', width: '100%', position: 'relative' }}>
+      <div className="header" style={{ textAlign: 'center', width: '100%', position: 'relative' }}>
         <button
           className="collapse-btn"
           onClick={e => {

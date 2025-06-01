@@ -115,8 +115,15 @@ export default function useOrgChart(rows) {
   useEffect(() => {
     const elk = new ELK()
     const layout = async () => {
-      const anyExpanded = Object.values(expanded).some(Boolean)
-      const verticalSpacing = anyExpanded ? 64 : 32
+      const baseSpacing = 32
+      let extra = 0
+      map.forEach(emp => {
+        if (expanded[emp.fullName]) {
+          const diff = countExtraFields(emp) * LINE_HEIGHT
+          if (diff > extra) extra = diff
+        }
+      })
+      const verticalSpacing = baseSpacing + extra
       const horizontalSpacing = Math.max(window.innerWidth * 0.05, 60)
       const graphDef = {
         id: 'root',
