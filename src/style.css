@@ -39,6 +39,8 @@ button:focus {
 
 .employee-node.expanded {
   width: fit-content;
+  position: relative;
+  z-index: 1;
 }
 
 .employee-node h2 {
