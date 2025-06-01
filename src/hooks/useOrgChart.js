@@ -71,13 +71,14 @@ export default function useOrgChart(rows) {
   useEffect(() => {
     const elk = new ELK()
     const layout = async () => {
-      const verticalSpacing = Math.max(window.innerHeight * 0.05, 60, 80)
+      const verticalSpacing = 100
       const horizontalSpacing = Math.max(window.innerWidth * 0.05, 60)
       const graphDef = {
         id: 'root',
         layoutOptions: {
           'elk.algorithm': 'layered',
           'elk.direction': 'DOWN',
+          'spacing.nodeNode': '100',
           'elk.spacing.nodeNodeBetweenLayers': verticalSpacing,
           'elk.spacing.nodeNode': horizontalSpacing
         },
