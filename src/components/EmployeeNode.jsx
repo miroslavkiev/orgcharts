@@ -1,4 +1,4 @@
-import React, { useEffect } from 'react'
+import React, { useEffect, memo } from 'react'
 import { Handle, Position, useReactFlow } from 'reactflow'
 import {
   ChevronDownIcon,
@@ -9,19 +9,26 @@ import {
 import defaultAvatar from '../assets/avatar.svg'
 import isValid from '../utils/isValid'
 
-export default function EmployeeNode({ id, data }) {
+function EmployeeNode({ id, data }) {
   const { updateNodeInternals } = useReactFlow()
   const { emp, collapsed, toggle, expanded, toggleExpand, photoURL } = data
 
   useEffect(() => {
     updateNodeInternals?.(id)
-  }, [collapsed, expanded, id, updateNodeInternals])
+  }, [collapsed, expanded])
 
   return (
     <div className={`employee-node ${collapsed ? 'collapsed' : ''} ${expanded ? 'expanded' : ''}`}>
       <Handle type="target" position={Position.Top} />
       <div style={{ textAlign: 'center', width: '100%', position: 'relative' }}>
-        <button className="collapse-btn" onClick={toggle} aria-label="collapse">
+        <button
+          className="collapse-btn"
+          onClick={e => {
+            e.stopPropagation()
+            toggle()
+          }}
+          aria-label="collapse"
+        >
           {collapsed ? <PlusIcon width={18} /> : <MinusIcon width={18} />}
         </button>
         <img
@@ -33,7 +40,14 @@ export default function EmployeeNode({ id, data }) {
         />
         <h2>{emp.fullName || emp['Name Surname']}</h2>
         <div className="title">{emp.title || emp['Job Title']}</div>
-        <button className="collapse-btn" onClick={toggleExpand} aria-label="details">
+        <button
+          className="collapse-btn"
+          onClick={e => {
+            e.stopPropagation()
+            toggleExpand()
+          }}
+          aria-label="details"
+        >
           {expanded ? <ChevronUpIcon width={18} /> : <ChevronDownIcon width={18} />}
         </button>
       </div>
@@ -76,3 +90,5 @@ export default function EmployeeNode({ id, data }) {
     </div>
   );
 }
+
+export default memo(EmployeeNode)

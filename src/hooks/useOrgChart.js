@@ -169,7 +169,7 @@ export default function useOrgChart(rows) {
       }
     }
     layout()
-  }, [nodes, edges])
+  }, [roots, collapsed, expanded])
 
   const expandAll = () => {
     const updates = {}

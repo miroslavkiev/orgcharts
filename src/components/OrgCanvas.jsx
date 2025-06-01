@@ -23,7 +23,7 @@ export default function OrgCanvas({ org }) {
 
   useEffect(() => {
     nodes.forEach(n => org.controls?.updateNodeInternals(n.id))
-  }, [nodes])
+  }, [org.collapsed, org.expanded])
 
   const handleDragStop = (e, node) => {
     org.setManualPosition(node.id, node.position)
