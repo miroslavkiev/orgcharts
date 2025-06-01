@@ -1,5 +1,9 @@
 import React, { useState } from 'react'
+<<<<<<< HEAD
 import { Handle } from 'reactflow'
+=======
+import { Handle } from 'react-flow-renderer'
+>>>>>>> b678978 (fixed package.json gitignore)
 import avatar from '../assets/avatar.svg'
 
 export default function EmployeeNode({ data }) {

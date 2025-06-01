@@ -1,6 +1,10 @@
 import { useTranslation } from "react-i18next"
 import React, { useCallback } from 'react'
+<<<<<<< HEAD
 import ReactFlow, { Controls, MiniMap } from 'reactflow'
+=======
+import ReactFlow, { Controls, MiniMap } from 'react-flow-renderer'
+>>>>>>> b678978 (fixed package.json gitignore)
 import EmployeeNode from './EmployeeNode'
 
 export default function OrgCanvas({ org }) {
