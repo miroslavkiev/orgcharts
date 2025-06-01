@@ -59,10 +59,19 @@ button:focus {
 .employee-node .details {
   font-size: 14px;
   margin-top: 4px;
-  overflow-y: auto;
+  overflow: hidden;
+  max-height: 0;
+  opacity: 0;
+  transition: max-height 0.3s ease, opacity 0.3s ease;
   flex: 1;
   width: 100%;
   word-wrap: break-word;
+}
+
+.employee-node.expanded .details {
+  max-height: 500px;
+  opacity: 1;
+  overflow-y: auto;
 }
 
 .employee-node .header {

@@ -1,4 +1,4 @@
-import React, { useEffect, memo } from 'react'
+import React, { useEffect, memo, useState } from 'react'
 import { Handle, Position, useReactFlow } from 'reactflow'
 import {
   ChevronDownIcon,
@@ -11,7 +11,9 @@ import isValid from '../utils/isValid'
 
 function EmployeeNode({ id, data }) {
   const { updateNodeInternals } = useReactFlow()
-  const { emp, collapsed, toggle, expanded, toggleExpand, photoURL } = data
+  const { emp, collapsed, toggle } = data
+  const [expanded, setExpanded] = useState(false)
+  const avatarSrc = isValid(emp['Photo URL']) ? emp['Photo URL'] : defaultAvatar
 
   // Update dimensions in ReactFlow when extra info is toggled
   useEffect(() => {
@@ -33,7 +35,7 @@ function EmployeeNode({ id, data }) {
           {collapsed ? <PlusIcon width={18} /> : <MinusIcon width={18} />}
         </button>
         <img
-          src={photoURL || defaultAvatar}
+          src={avatarSrc}
           alt="avatar"
           width={80}
           height={80}
@@ -45,7 +47,7 @@ function EmployeeNode({ id, data }) {
           className="collapse-btn details-btn"
           onClick={e => {
             e.stopPropagation()
-            toggleExpand()
+            setExpanded(prev => !prev)
           }}
           aria-label="details"
         >
@@ -56,19 +58,14 @@ function EmployeeNode({ id, data }) {
       {expanded && (
         <div className="details">
           {Object.entries(emp).map(([k, v]) => {
-            if (
-              [
-                'Name Surname',
-                'Job Title',
-                'title',
-                'Manager',
-                'children',
-                'fullName',
-                'Photo URL',
-                'photo',
-                'photoUrl'
-              ].includes(k)
-            ) {
+            if ([
+              'Name',
+              'Surname',
+              'Name Surname',
+              'Job Title',
+              'title',
+              'fullName'
+            ].includes(k)) {
               return null
             }
 
