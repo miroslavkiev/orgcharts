@@ -9,7 +9,7 @@ export default function EmployeeNode({ data }) {
   const [show, setShow] = useState(false)
 
   return (
-    <div className="employee-node">
+    <div className={`employee-node${show ? ' expanded' : ''}`}>
       <Handle type="target" position="top" />
       <div style={{ textAlign: 'center', width: '100%', position: 'relative' }}>
         <button className="collapse-btn" onClick={toggle} aria-label="collapse" style={{ position: 'absolute', right: 0, top: 0 }}>
