@@ -84,3 +84,16 @@ button:focus {
 .employee-node .collapse-btn:hover {
   box-shadow: 0 0 4px rgba(0,0,0,0.15);
 }
+
+.employee-node .details-btn {
+  background-color: transparent;
+  border-radius: 50%;
+  padding: 4px;
+  transition: transform 0.2s ease;
+  color: var(--accent);
+}
+
+.employee-node.expanded .details-btn {
+  transform: rotate(180deg);
+}
+

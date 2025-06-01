@@ -1,6 +1,6 @@
 // src/utils/isValid.js
 export default function isValid(value) {
-  if (typeof value !== 'string') return false;
-  const v = value.trim().toLowerCase();
+  if (value === null || value === undefined) return false;
+  const v = String(value).trim().toLowerCase();
   return v !== '' && v !== 'n/a';
 }

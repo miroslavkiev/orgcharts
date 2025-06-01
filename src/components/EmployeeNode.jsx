@@ -42,7 +42,7 @@ function EmployeeNode({ id, data }) {
         <h2>{emp.fullName || emp['Name Surname']}</h2>
         <div className="title">{emp.title || emp['Job Title']}</div>
         <button
-          className="collapse-btn"
+          className="collapse-btn details-btn"
           onClick={e => {
             e.stopPropagation()
             toggleExpand()

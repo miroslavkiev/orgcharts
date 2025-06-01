@@ -1,5 +1,6 @@
 import { useMemo, useReducer, useEffect, useState, useCallback } from 'react'
 import ELK from 'elkjs/lib/elk.bundled.js'
+import { calculateVerticalPositions, MIN_VERTICAL_SPACING } from '../utils/layout'
 
 const BASE_HEIGHT = 140
 const LINE_HEIGHT = 22
@@ -115,15 +116,6 @@ export default function useOrgChart(rows) {
   useEffect(() => {
     const elk = new ELK()
     const layout = async () => {
-      const baseSpacing = 32
-      let extra = 0
-      map.forEach(emp => {
-        if (expanded[emp.fullName]) {
-          const diff = countExtraFields(emp) * LINE_HEIGHT
-          if (diff > extra) extra = diff
-        }
-      })
-      const verticalSpacing = baseSpacing + extra
       const horizontalSpacing = Math.max(window.innerWidth * 0.05, 60)
       const graphDef = {
         id: 'root',
@@ -131,7 +123,7 @@ export default function useOrgChart(rows) {
           'elk.algorithm': 'layered',
           'elk.direction': 'DOWN',
           'spacing.nodeNode': String(horizontalSpacing),
-          'spacing.nodeNodeBetweenLayers': String(verticalSpacing),
+          'spacing.nodeNodeBetweenLayers': String(MIN_VERTICAL_SPACING),
           'spacing.edgeNode': '30'
         },
         children: nodes.map(n => ({
@@ -156,6 +148,7 @@ export default function useOrgChart(rows) {
         })
         const offset = horizontalSpacing * 5
 
+        const vertical = calculateVerticalPositions(nodes, edges, positions, collapsed)
         const newPositions = { ...positions }
         setGraph({
           nodes: nodes.map(n => {
@@ -164,9 +157,10 @@ export default function useOrgChart(rows) {
               pos = { x: maxX + offset + pos.x, y: pos.y }
             }
             const manual = positions[n.id]?.manual
-            const finalPos = manual ? { x: positions[n.id].x, y: positions[n.id].y } : pos
-            newPositions[n.id] = { x: finalPos.x, y: finalPos.y, manual: manual || false }
-            return { ...n, position: finalPos }
+            const finalX = manual ? positions[n.id].x : pos.x
+            const finalY = manual ? positions[n.id].y : vertical[n.id]?.y || pos.y
+            newPositions[n.id] = { x: finalX, y: finalY, manual: manual || false }
+            return { ...n, position: { x: finalX, y: finalY } }
           }),
           edges
         })
