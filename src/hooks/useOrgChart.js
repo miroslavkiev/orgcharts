@@ -130,9 +130,9 @@ export default function useOrgChart(rows) {
         layoutOptions: {
           'elk.algorithm': 'layered',
           'elk.direction': 'DOWN',
-          'spacing.nodeNode': '100',
-          'elk.spacing.nodeNodeBetweenLayers': verticalSpacing,
-          'elk.spacing.nodeNode': horizontalSpacing
+          'spacing.nodeNode': String(horizontalSpacing),
+          'spacing.nodeNodeBetweenLayers': String(verticalSpacing),
+          'spacing.edgeNode': '30'
         },
         children: nodes.map(n => ({
           id: n.id,
