@@ -1,4 +1,4 @@
-import { useMemo, useReducer, useEffect, useState } from 'react'
+import { useMemo, useReducer, useEffect, useState, useCallback } from 'react'
 import ELK from 'elkjs/lib/elk.bundled.js'
 
 const BASE_HEIGHT = 140
@@ -50,22 +50,29 @@ function buildForest(rows) {
   return { map, roots, orphans }
 }
 
+function mapReducer(state, action) {
+  if (typeof action === 'function') {
+    return { ...state, ...action(state) }
+  }
+  return { ...state, ...action }
+}
+
 export default function useOrgChart(rows) {
   const { map, roots, orphans } = useMemo(() => buildForest(rows), [rows])
 
-  const [collapsed, setCollapsed] = useReducer((s, a) => ({ ...s, ...a }), {})
-  const [expanded, setExpanded] = useReducer((s, a) => ({ ...s, ...a }), {})
+  const [collapsed, setCollapsed] = useReducer(mapReducer, {})
+  const [expanded, setExpanded] = useReducer(mapReducer, {})
   const [positions, setPositions] = useState({})
 
   const [graph, setGraph] = useState({ nodes: [], edges: [] })
 
-  const toggleNode = id => {
-    setCollapsed({ [id]: !collapsed[id] })
-  }
+  const toggleNode = useCallback(id => {
+    setCollapsed(state => ({ [id]: !state[id] }))
+  }, [])
 
-  const toggleExpand = id => {
-    setExpanded({ [id]: !expanded[id] })
-  }
+  const toggleExpand = useCallback(id => {
+    setExpanded(state => ({ [id]: !state[id] }))
+  }, [])
 
   const { nodes, edges } = useMemo(() => {
     const n = []
@@ -88,7 +95,8 @@ export default function useOrgChart(rows) {
           toggle: () => toggleNode(id),
           expanded: isExpanded,
           toggleExpand: () => toggleExpand(id),
-          fromOrphanRoot
+          fromOrphanRoot,
+          photoURL: emp['Photo URL'] || emp.photo || emp.photoUrl || ''
         }
       })
       if (parentId) {
@@ -107,7 +115,8 @@ export default function useOrgChart(rows) {
   useEffect(() => {
     const elk = new ELK()
     const layout = async () => {
-      const verticalSpacing = 100
+      const anyExpanded = Object.values(expanded).some(Boolean)
+      const verticalSpacing = anyExpanded ? 64 : 32
       const horizontalSpacing = Math.max(window.innerWidth * 0.05, 60)
       const graphDef = {
         id: 'root',

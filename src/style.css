@@ -1,7 +1,7 @@
 @import 'reactflow/dist/style.css';
 :root {
-  font-family: 'Inter', sans-serif;
-  --accent: #f37021;
+  font-family: 'Poppins', sans-serif;
+  --accent: #F05623;
 }
 
 body {
@@ -19,7 +19,7 @@ button:focus {
   outline: 2px solid var(--accent);
 }
 .employee-node {
-  font-family: 'Inter', sans-serif;
+  font-family: 'Poppins', sans-serif;
   background-color: #ffffff;
   border: 1px solid #e1e4e8;
   border-radius: 12px;
