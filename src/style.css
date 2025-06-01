@@ -1,0 +1,26 @@
+@import 'reactflow/dist/style.css';
+
+:root {
+  --primary: #0020BB;
+  --accent: #00FFBE;
+  --dark-bg: #001528;
+  --white: #ffffff;
+  --secondary: #CCD1D4;
+  --secondary-alt: #6450FF;
+  font-family: 'Lexend', sans-serif;
+}
+
+body {
+  margin: 0;
+}
+
+button {
+  cursor: pointer;
+  background: none;
+  border: none;
+  color: inherit;
+}
+
+button:focus {
+  outline: 2px solid var(--accent);
+}
