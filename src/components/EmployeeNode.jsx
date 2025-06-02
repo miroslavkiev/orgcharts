@@ -14,13 +14,29 @@ export default function EmployeeNode({ data }) {
     <div className={`employee-node${show ? ' expanded' : ''}`}>
       <Handle type="target" position="top" />
       <div style={{ textAlign: 'center', width: '100%', position: 'relative' }}>
-        <button className="collapse-btn" onClick={toggle} aria-label="collapse" style={{ position: 'absolute', right: 0, top: 0 }}>
+        <button
+          className="collapse-btn"
+          onClick={e => {
+            e.stopPropagation()
+            toggle()
+          }}
+          aria-label="collapse"
+          style={{ position: 'absolute', right: 0, top: 0 }}
+        >
           {collapsed ? <PlusIcon width={18} /> : <MinusIcon width={18} />}
         </button>
         <img src={imgSrc} alt="" width={80} height={80} onError={() => setImgSrc(avatar)} />
         <div style={{ fontWeight: 'bold' }}>{emp['Name Surname']}</div>
         <div>{emp['Job Title']}</div>
-        <button onClick={() => setShow(s => !s)} aria-label="details">{show ? '–' : '+'}</button>
+        <button
+          onClick={e => {
+            e.stopPropagation()
+            setShow(s => !s)
+          }}
+          aria-label="details"
+        >
+          {show ? '–' : '+'}
+        </button>
       </div>
       {show && (
         <div className="details">
