@@ -26,6 +26,7 @@ button:focus {
 .employee-node {
   width: 140px;
   min-height: 180px;
+  height: 100%;
   padding: 8px;
   border: 1px solid #ccc;
   border-radius: 4px;
@@ -38,6 +39,7 @@ button:focus {
 .employee-node.expanded {
   width: fit-content;
   max-width: min(80vw, 500px);
+  overflow: auto;
 }
 .employee-node .details {
   font-size: 12px;
