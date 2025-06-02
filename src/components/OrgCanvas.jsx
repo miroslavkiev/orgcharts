@@ -1,11 +1,16 @@
 import { useTranslation } from "react-i18next"
 import React, { useCallback, useEffect } from 'react'
-import ReactFlow, { Controls, MiniMap } from 'reactflow'
+import ReactFlow, { Controls, MiniMap, updateNodeInternals } from 'reactflow'
 import EmployeeNode from './EmployeeNode'
 
 export default function OrgCanvas({ org }) {
   const { t } = useTranslation()
   const { nodes, edges } = org
+
+  const handleDragStop = useCallback((_, node) => {
+    org.updatePosition(node.id, node.position)
+    updateNodeInternals(node.id)
+  }, [org])
 
   const nodeTypes = {
     employee: EmployeeNode
@@ -28,6 +33,7 @@ export default function OrgCanvas({ org }) {
         edges={edges}
         nodeTypes={nodeTypes}
         onInit={onInit}
+        onNodeDragStop={handleDragStop}
         fitView
       >
         <Controls />
