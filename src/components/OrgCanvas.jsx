@@ -9,7 +9,6 @@ export default function OrgCanvas({ org }) {
 
   const handleDragStop = useCallback((_, node) => {
     org.updatePosition(node.id, node.position)
-    updateNodeInternals(node.id)
   }, [org])
 
   const nodeTypes = {
