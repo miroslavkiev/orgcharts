@@ -1,5 +1,5 @@
 import { useTranslation } from "react-i18next"
-import React, { useCallback, useEffect } from 'react'
+import React, { useCallback, useEffect, useMemo } from 'react'
 import ReactFlow, { Controls, MiniMap } from 'reactflow'
 import EmployeeNode from './EmployeeNode'
 
@@ -11,9 +11,9 @@ export default function OrgCanvas({ org }) {
     org.updatePosition(node.id, node.position)
   }, [org])
 
-  const nodeTypes = {
+  const nodeTypes = useMemo(() => ({
     employee: EmployeeNode
-  }
+  }), [])
 
   const onInit = useCallback(instance => {
     org.controls = instance
