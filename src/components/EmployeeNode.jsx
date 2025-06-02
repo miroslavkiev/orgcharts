@@ -16,6 +16,7 @@ export default function EmployeeNode({ data }) {
       <div style={{ textAlign: 'center', width: '100%', position: 'relative' }}>
         <button
           className="collapse-btn"
+          onPointerDown={e => e.stopPropagation()}
           onClick={e => {
             e.stopPropagation()
             toggle()
@@ -29,6 +30,7 @@ export default function EmployeeNode({ data }) {
         <div style={{ fontWeight: 'bold' }}>{emp['Name Surname']}</div>
         <div>{emp['Job Title']}</div>
         <button
+          onPointerDown={e => e.stopPropagation()}
           onClick={e => {
             e.stopPropagation()
             setShow(s => !s)
