@@ -1,6 +1,5 @@
-import { useMemo, useReducer, useEffect, useState, useCallback } from 'react'
+import { useMemo, useReducer, useEffect, useState } from 'react'
 import ELK from 'elkjs/lib/elk.bundled.js'
-import { calculateVerticalPositions, MIN_VERTICAL_SPACING } from '../utils/layout'
 
 const BASE_HEIGHT = 140
 const LINE_HEIGHT = 22
@@ -17,8 +16,8 @@ function countExtraFields(employee) {
   ).length
 }
 
-function getNodeHeight(employee, expanded) {
-  return expanded ? BASE_HEIGHT + countExtraFields(employee) * LINE_HEIGHT : BASE_HEIGHT
+function getNodeHeight(employee) {
+  return BASE_HEIGHT + countExtraFields(employee) * LINE_HEIGHT
 }
 
 function buildForest(rows) {
@@ -51,29 +50,16 @@ function buildForest(rows) {
   return { map, roots, orphans }
 }
 
-function mapReducer(state, action) {
-  if (typeof action === 'function') {
-    return { ...state, ...action(state) }
-  }
-  return { ...state, ...action }
-}
-
 export default function useOrgChart(rows) {
   const { map, roots, orphans } = useMemo(() => buildForest(rows), [rows])
 
-  const [collapsed, setCollapsed] = useReducer(mapReducer, {})
-  const [expanded, setExpanded] = useReducer(mapReducer, {})
-  const [positions, setPositions] = useState({})
+  const [collapsed, setCollapsed] = useReducer((s, a) => ({ ...s, ...a }), {})
 
   const [graph, setGraph] = useState({ nodes: [], edges: [] })
 
-  const toggleNode = useCallback(id => {
-    setCollapsed(state => ({ [id]: !state[id] }))
-  }, [])
-
-  const toggleExpand = useCallback(id => {
-    setExpanded(state => ({ [id]: !state[id] }))
-  }, [])
+  const toggleNode = id => {
+    setCollapsed({ [id]: !collapsed[id] })
+  }
 
   const { nodes, edges } = useMemo(() => {
     const n = []
@@ -82,23 +68,13 @@ export default function useOrgChart(rows) {
     const traverse = (emp, parentId, fromOrphanRoot) => {
       const id = emp.fullName
       const isCollapsed = collapsed[id]
-      const isExpanded = expanded[id]
       n.push({
         id,
         type: 'employee',
-        position: positions[id] ? { x: positions[id].x, y: positions[id].y } : { x: 0, y: 0 },
-        width: 240,
-        height: getNodeHeight(emp, isExpanded),
-        draggable: true,
-        data: {
-          emp,
-          collapsed: isCollapsed,
-          toggle: () => toggleNode(id),
-          expanded: isExpanded,
-          toggleExpand: () => toggleExpand(id),
-          fromOrphanRoot,
-          photoURL: emp['Photo URL'] || emp.photo || emp.photoUrl || ''
-        }
+        position: { x: 0, y: 0 },
+        width: 220,
+        height: getNodeHeight(emp),
+        data: { emp, collapsed: isCollapsed, toggle: () => toggleNode(id), fromOrphanRoot }
       })
       if (parentId) {
         e.push({ id: `${parentId}-${id}`, source: parentId, target: id })
@@ -111,32 +87,33 @@ export default function useOrgChart(rows) {
     roots.forEach(r => traverse(r, null, r.noManager))
 
     return { nodes: n, edges: e }
-  }, [roots, collapsed, expanded, positions])
+  }, [roots, collapsed])
 
   useEffect(() => {
     const elk = new ELK()
     const layout = async () => {
+      const verticalSpacing = 100
       const horizontalSpacing = Math.max(window.innerWidth * 0.05, 60)
       const graphDef = {
         id: 'root',
         layoutOptions: {
           'elk.algorithm': 'layered',
           'elk.direction': 'DOWN',
-          'spacing.nodeNode': String(horizontalSpacing),
-          'spacing.nodeNodeBetweenLayers': String(MIN_VERTICAL_SPACING),
-          'spacing.edgeNode': '30'
+          'spacing.nodeNode': '100',
+          'elk.spacing.nodeNodeBetweenLayers': verticalSpacing,
+          'elk.spacing.nodeNode': horizontalSpacing
         },
         children: nodes.map(n => ({
           id: n.id,
-          width: 240,
-          height: n.height
+          width: 220,
+          height: getNodeHeight(n.data.emp)
         })),
         edges: edges.map(e => ({ id: e.id, sources: [e.source], targets: [e.target] }))
       }
       try {
         const res = await elk.layout(graphDef)
-        const layoutPositions = {}
-        res.children?.forEach(c => { layoutPositions[c.id] = { x: c.x, y: c.y } })
+        const positions = {}
+        res.children?.forEach(c => { positions[c.id] = { x: c.x, y: c.y } })
 
         // Find max X among nodes that are not part of an orphan tree
         let maxX = 0
@@ -148,29 +125,22 @@ export default function useOrgChart(rows) {
         })
         const offset = horizontalSpacing * 5
 
-        const vertical = calculateVerticalPositions(nodes, edges, positions, collapsed)
-        const newPositions = { ...positions }
         setGraph({
           nodes: nodes.map(n => {
-            let pos = layoutPositions[n.id] || { x: 0, y: 0 }
+            let pos = positions[n.id] || { x: 0, y: 0 }
             if (n.data.fromOrphanRoot) {
               pos = { x: maxX + offset + pos.x, y: pos.y }
             }
-            const manual = positions[n.id]?.manual
-            const finalX = manual ? positions[n.id].x : pos.x
-            const finalY = manual ? positions[n.id].y : vertical[n.id]?.y || pos.y
-            newPositions[n.id] = { x: finalX, y: finalY, manual: manual || false }
-            return { ...n, position: { x: finalX, y: finalY } }
+            return { ...n, position: pos }
           }),
           edges
         })
-        setPositions(newPositions)
       } catch (err) {
         setGraph({ nodes, edges })
       }
     }
     layout()
-  }, [roots, collapsed, expanded])
+  }, [nodes, edges])
 
   const expandAll = () => {
     const updates = {}
@@ -184,25 +154,5 @@ export default function useOrgChart(rows) {
     setCollapsed(updates)
   }
 
-  const setManualPosition = (id, pos) => {
-    setPositions(p => ({
-      ...p,
-      [id]: { x: pos.x, y: pos.y, manual: true }
-    }))
-  }
-
-  return {
-    map,
-    roots,
-    orphans,
-    collapsed,
-    expanded,
-    nodes: graph.nodes,
-    edges: graph.edges,
-    toggleNode,
-    toggleExpand,
-    setManualPosition,
-    expandAll,
-    collapseAll
-  }
+  return { map, roots, orphans, collapsed, nodes: graph.nodes, edges: graph.edges, toggleNode, expandAll, collapseAll }
 }

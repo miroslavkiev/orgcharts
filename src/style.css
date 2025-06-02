@@ -1,7 +1,12 @@
 @import 'reactflow/dist/style.css';
 :root {
-  font-family: 'Poppins', sans-serif;
-  --accent: #F05623;
+  --primary: #0020BB;
+  --accent: #00FFBE;
+  --dark-bg: #001528;
+  --white: #ffffff;
+  --secondary: #CCD1D4;
+  --secondary-alt: #6450FF;
+  font-family: 'Lexend', sans-serif;
 }
 
 body {
@@ -19,90 +24,31 @@ button:focus {
   outline: 2px solid var(--accent);
 }
 .employee-node {
-  font-family: 'Poppins', sans-serif;
-  background-color: #ffffff;
-  border: 1px solid #e1e4e8;
-  border-radius: 12px;
-  padding: 16px;
-  box-shadow: 0px 4px 10px rgba(0, 0, 0, 0.05);
-  width: 240px;
-  min-width: 240px;
-  max-width: 240px;
-  transition: all 0.3s ease;
+  width: 140px;
+  min-height: 180px;
+  padding: 8px;
+  border: 1px solid #ccc;
+  border-radius: 4px;
+  background: #fff;
   display: flex;
   flex-direction: column;
   align-items: center;
-}
-
-.employee-node:hover {
-  box-shadow: 0px 4px 10px rgba(0, 0, 0, 0.05);
-}
-
-.employee-node.expanded {
-  position: relative;
-  z-index: 1;
-}
-
-.employee-node h2 {
-  font-size: 18px;
-  color: #333;
-  font-weight: 600;
-  margin: 4px 0;
-}
-
-.employee-node .title {
-  font-size: 14px;
-  color: #555;
-  font-weight: 400;
-}
-
-.employee-node .details {
-  font-size: 14px;
-  margin-top: 4px;
   overflow: hidden;
-  max-height: 0;
-  opacity: 0;
-  transition: max-height 0.3s ease, opacity 0.3s ease;
+}
+.employee-node.expanded {
+  width: fit-content;
+  max-width: min(80vw, 500px);
+}
+.employee-node .details {
+  font-size: 12px;
+  margin-top: 4px;
+  overflow-y: auto;
   flex: 1;
   width: 100%;
   word-wrap: break-word;
 }
-
-.employee-node.expanded .details {
-  max-height: 500px;
-  opacity: 1;
-  overflow-y: auto;
-}
-
-.employee-node .header {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: 4px;
-}
-
 .employee-node .collapse-btn {
-  background-color: transparent;
+  background: none;
   border: none;
   cursor: pointer;
-  color: var(--accent);
-  border-radius: 8px;
-  transition: box-shadow 0.2s ease;
 }
-
-.employee-node .collapse-btn:hover {
-  box-shadow: 0 0 4px rgba(0,0,0,0.15);
-}
-
-.employee-node .details-btn {
-  background-color: transparent;
-  border-radius: 50%;
-  padding: 4px;
-  transition: transform 0.2s ease;
-  color: var(--accent);
-}
-
-.employee-node.expanded .details-btn {
-  transform: rotate(180deg);
-}
-

@@ -1,92 +1,41 @@
-import React, { useEffect, memo, useState } from 'react'
-import { Handle, Position, useReactFlow } from 'reactflow'
-import {
-  ChevronDownIcon,
-  ChevronUpIcon,
-  MinusIcon,
-  PlusIcon
-} from '@heroicons/react/20/solid'
-import defaultAvatar from '../assets/avatar.svg'
-import isValid from '../utils/isValid'
+import React, { useState } from 'react'
+import { Handle } from 'reactflow'
+import { PlusIcon, MinusIcon } from '@heroicons/react/24/outline'
+import avatar from '../assets/avatar.svg'
 
-function EmployeeNode({ id, data }) {
-  const { updateNodeInternals } = useReactFlow()
+export default function EmployeeNode({ data }) {
   const { emp, collapsed, toggle } = data
-  const [expanded, setExpanded] = useState(false)
-  const avatarSrc = isValid(emp['Photo URL']) ? emp['Photo URL'] : defaultAvatar
+  const [imgSrc, setImgSrc] = useState(emp['Photo URL'] || avatar)
+  const [show, setShow] = useState(false)
 
-  // Update dimensions in ReactFlow when extra info is toggled
-  useEffect(() => {
-    updateNodeInternals?.(id)
-  }, [expanded])
+  const isValid = value => value !== undefined && value !== null && value !== '' && value !== 'N/A'
 
   return (
-    <div className={`employee-node ${collapsed ? 'collapsed' : ''} ${expanded ? 'expanded' : ''}`}>
-      <Handle type="target" position={Position.Top} />
-      <div className="header" style={{ textAlign: 'center', width: '100%', position: 'relative' }}>
-        <button
-          className="collapse-btn"
-          onClick={e => {
-            e.stopPropagation()
-            toggle()
-          }}
-          aria-label="collapse"
-        >
+    <div className={`employee-node${show ? ' expanded' : ''}`}>
+      <Handle type="target" position="top" />
+      <div style={{ textAlign: 'center', width: '100%', position: 'relative' }}>
+        <button className="collapse-btn" onClick={toggle} aria-label="collapse" style={{ position: 'absolute', right: 0, top: 0 }}>
           {collapsed ? <PlusIcon width={18} /> : <MinusIcon width={18} />}
         </button>
-        <img
-          src={avatarSrc}
-          alt="avatar"
-          width={80}
-          height={80}
-          onError={e => (e.currentTarget.src = defaultAvatar)}
-        />
-        <h2>{emp.fullName || emp['Name Surname']}</h2>
-        <div className="title">{emp.title || emp['Job Title']}</div>
-        <button
-          className="collapse-btn details-btn"
-          onClick={e => {
-            e.stopPropagation()
-            setExpanded(prev => !prev)
-          }}
-          aria-label="details"
-        >
-          {expanded ? <ChevronUpIcon width={18} /> : <ChevronDownIcon width={18} />}
-        </button>
+        <img src={imgSrc} alt="" width={80} height={80} onError={() => setImgSrc(avatar)} />
+        <div style={{ fontWeight: 'bold' }}>{emp['Name Surname']}</div>
+        <div>{emp['Job Title']}</div>
+        <button onClick={() => setShow(s => !s)} aria-label="details">{show ? '–' : '+'}</button>
       </div>
-
-      {expanded && (
+      {show && (
         <div className="details">
           {Object.entries(emp).map(([k, v]) => {
-            if ([
-              'Name',
-              'Surname',
-              'Name Surname',
-              'Job Title',
-              'title',
-              'fullName'
-            ].includes(k)) {
-              return null
-            }
-
-            let display = v;
+            if (k === 'Name Surname' || k === 'Job Title' || k === 'Manager' || k === 'children') return null
+            let display = v
             if (Array.isArray(v) || (v && typeof v === 'object')) {
-              display = JSON.stringify(v);
+              display = JSON.stringify(v)
             }
-
-            if (!isValid(display)) return null;
-
-            return (
-              <div key={k}>
-                <strong>{k}:</strong> {display}
-              </div>
-            );
+            if (!isValid(display)) return null
+            return <div key={k}><strong>{k}:</strong> {display}</div>
           })}
         </div>
       )}
-      <Handle type="source" position={Position.Bottom} />
+      <Handle type="source" position="bottom" />
     </div>
-  );
+  )
 }
-
-export default memo(EmployeeNode)
