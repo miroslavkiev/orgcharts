@@ -7,6 +7,10 @@ export default function OrgCanvas({ org }) {
   const { t } = useTranslation()
   const { nodes, edges } = org
 
+  const handleDragStop = useCallback((_, node) => {
+    org.updatePosition(node.id, node.position)
+  }, [org])
+
   const nodeTypes = {
     employee: EmployeeNode
   }
@@ -28,6 +32,7 @@ export default function OrgCanvas({ org }) {
         edges={edges}
         nodeTypes={nodeTypes}
         onInit={onInit}
+        onNodeDragStop={handleDragStop}
         fitView
       >
         <Controls />

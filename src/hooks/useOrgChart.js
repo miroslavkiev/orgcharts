@@ -56,6 +56,7 @@ export default function useOrgChart(rows) {
   const [collapsed, setCollapsed] = useReducer((s, a) => ({ ...s, ...a }), {})
 
   const [graph, setGraph] = useState({ nodes: [], edges: [] })
+  const [manualPositions, setManualPositions] = useState({})
 
   const toggleNode = id => {
     setCollapsed({ [id]: !collapsed[id] })
@@ -74,6 +75,7 @@ export default function useOrgChart(rows) {
         position: { x: 0, y: 0 },
         width: 220,
         height: getNodeHeight(emp),
+        draggable: true,
         data: { emp, collapsed: isCollapsed, toggle: () => toggleNode(id), fromOrphanRoot }
       })
       if (parentId) {
@@ -128,7 +130,9 @@ export default function useOrgChart(rows) {
         setGraph({
           nodes: nodes.map(n => {
             let pos = positions[n.id] || { x: 0, y: 0 }
-            if (n.data.fromOrphanRoot) {
+            if (manualPositions[n.id]) {
+              pos = manualPositions[n.id]
+            } else if (n.data.fromOrphanRoot) {
               pos = { x: maxX + offset + pos.x, y: pos.y }
             }
             return { ...n, position: pos }
@@ -154,5 +158,24 @@ export default function useOrgChart(rows) {
     setCollapsed(updates)
   }
 
-  return { map, roots, orphans, collapsed, nodes: graph.nodes, edges: graph.edges, toggleNode, expandAll, collapseAll }
+  const updatePosition = (id, pos) => {
+    setManualPositions(p => ({ ...p, [id]: pos }))
+    setGraph(g => ({
+      nodes: g.nodes.map(n => n.id === id ? { ...n, position: pos } : n),
+      edges: g.edges
+    }))
+  }
+
+  return {
+    map,
+    roots,
+    orphans,
+    collapsed,
+    nodes: graph.nodes,
+    edges: graph.edges,
+    toggleNode,
+    expandAll,
+    collapseAll,
+    updatePosition
+  }
 }
