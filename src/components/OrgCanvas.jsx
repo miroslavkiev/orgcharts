@@ -35,7 +35,7 @@ export default function OrgCanvas({ org }) {
         onNodeDragStop={handleDragStop}
         fitView
       >
-        <Controls />
+        <Controls showInteractive={false} />
         <MiniMap />
       </ReactFlow>
       {(() => {
