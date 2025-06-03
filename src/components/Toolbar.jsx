@@ -9,9 +9,9 @@ export default function Toolbar({ org }) {
     <div style={{ position: 'fixed', top: 10, right: 10, zIndex: 10 }}>
       <button onClick={org.expandAll} aria-label={t('expandAll')}>{t('expandAll')}</button>
       <button onClick={org.collapseAll} aria-label={t('collapseAll')}>{t('collapseAll')}</button>
-      <button onClick={() => org.controls.zoomIn()} aria-label={t('zoomIn')}><PlusIcon width={16} /></button>
-      <button onClick={() => org.controls.zoomOut()} aria-label={t('zoomOut')}><MinusIcon width={16} /></button>
-      <button onClick={() => org.controls.fitView()} aria-label={t('fitView')}><ArrowsPointingOutIcon width={16} /></button>
+      <button onClick={() => org.controls && org.controls.zoomIn()} aria-label={t('zoomIn')}><PlusIcon width={16} /></button>
+      <button onClick={() => org.controls && org.controls.zoomOut()} aria-label={t('zoomOut')}><MinusIcon width={16} /></button>
+      <button onClick={() => org.controls && org.controls.fitView()} aria-label={t('fitView')}><ArrowsPointingOutIcon width={16} /></button>
       <select
         value={i18n.language}
         onChange={e => i18n.changeLanguage(e.target.value)}

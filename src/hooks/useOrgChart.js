@@ -57,6 +57,7 @@ export default function useOrgChart(rows) {
 
   const [graph, setGraph] = useState({ nodes: [], edges: [] })
   const [manualPositions, setManualPositions] = useState({})
+  const [controls, setControls] = useState(null)
 
   const toggleNode = id => {
     setCollapsed({ [id]: !collapsed[id] })
@@ -176,6 +177,8 @@ export default function useOrgChart(rows) {
     toggleNode,
     expandAll,
     collapseAll,
-    updatePosition
+    updatePosition,
+    controls,
+    setControls
   }
 }
