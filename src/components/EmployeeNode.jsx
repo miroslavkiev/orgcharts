@@ -43,7 +43,15 @@ export default function EmployeeNode({ data }) {
       {show && (
         <div className="details">
           {Object.entries(emp).map(([k, v]) => {
-            if (k === 'Name Surname' || k === 'Job Title' || k === 'Manager' || k === 'children') return null
+            if (
+              k === 'Name Surname' ||
+              k === 'Job Title' ||
+              k === 'Manager' ||
+              k === 'children' ||
+              k === 'Photo URL' ||
+              k === 'fullName'
+            )
+              return null
             let display = v
             if (Array.isArray(v) || (v && typeof v === 'object')) {
               display = JSON.stringify(v)
