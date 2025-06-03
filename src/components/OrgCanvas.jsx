@@ -16,7 +16,7 @@ export default function OrgCanvas({ org }) {
   }), [])
 
   const onInit = useCallback(instance => {
-    org.controls = instance
+    org.setControls(instance)
   }, [org])
 
   useEffect(() => {
