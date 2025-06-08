@@ -56,7 +56,7 @@ export default function useOrgChart(rows) {
   const [collapsed, setCollapsed] = useReducer((s, a) => ({ ...s, ...a }), {})
 
   const [graph, setGraph] = useState({ nodes: [], edges: [] })
-  const [manualPositions, setManualPositions] = useState({})
+  const [nodeLayerConstraints, setNodeLayerConstraints] = useState({})
   const [controls, setControls] = useState(null)
 
   const toggleNode = id => {
@@ -106,11 +106,21 @@ export default function useOrgChart(rows) {
           'elk.spacing.nodeNodeBetweenLayers': verticalSpacing,
           'elk.spacing.nodeNode': horizontalSpacing
         },
-        children: nodes.map(n => ({
-          id: n.id,
-          width: 220,
-          height: getNodeHeight(n.data.emp)
-        })),
+        children: nodes.map(n => {
+          const elkNode = {
+            id: n.id,
+            width: 220, // Consider using n.width if available and variable
+            height: getNodeHeight(n.data.emp) // Consider using n.height if available and variable
+          };
+          if (nodeLayerConstraints[n.id] !== undefined) {
+            elkNode.layoutOptions = {
+              // Preserve other layoutOptions if they exist or could be added later
+              // For now, directly assigning as no other per-node options are present
+              'org.eclipse.elk.layered.layerConstraint': nodeLayerConstraints[n.id]
+            };
+          }
+          return elkNode;
+        }),
         edges: edges.map(e => ({ id: e.id, sources: [e.source], targets: [e.target] }))
       }
       try {
@@ -130,13 +140,24 @@ export default function useOrgChart(rows) {
 
         setGraph({
           nodes: nodes.map(n => {
-            let pos = positions[n.id] || { x: 0, y: 0 }
-            if (manualPositions[n.id]) {
-              pos = manualPositions[n.id]
-            } else if (n.data.fromOrphanRoot) {
-              pos = { x: maxX + offset + pos.x, y: pos.y }
+            let pos = positions[n.id] || { x: 0, y: 0 }; // Get ELK's calculated position
+
+            // If the node has a layer constraint, its y position is determined by ELK based on that layer.
+            // If it's an orphan AND does not have a layer constraint, then apply the orphan offset.
+            // The 'maxX + offset' logic for orphans should ideally not interfere with x-positioning of constrained nodes.
+            // ELK should handle x-spacing for all nodes within their layers.
+            // The orphan offsetting primarily affects unconstrained orphans, moving their entire tree.
+            if (n.data.fromOrphanRoot && nodeLayerConstraints[n.id] === undefined) {
+              // Apply horizontal offset for orphan trees, only if not layer-constrained
+              pos = { x: maxX + offset + pos.x, y: pos.y };
             }
-            return { ...n, position: pos }
+            // If a node IS fromOrphanRoot AND HAS a layerConstraint, its 'y' is set by ELK based on the layer,
+            // and its 'x' is also set by ELK. We assume ELK handles its placement correctly within the constrained layer.
+            // The previous orphan logic might have placed entire orphan subgraphs starting at 'maxX + offset'.
+            // If a constrained node is an orphan root, its layer constraint should dictate its Y,
+            // and ELK handles X. This might mean it's no longer visually separated with the 'offset'. This is an acceptable change.
+
+            return { ...n, position: pos };
           }),
           edges
         })
@@ -145,7 +166,7 @@ export default function useOrgChart(rows) {
       }
     }
     layout()
-  }, [nodes, edges])
+  }, [nodes, edges, nodeLayerConstraints])
 
   const expandAll = () => {
     const updates = {}
@@ -160,11 +181,13 @@ export default function useOrgChart(rows) {
   }
 
   const updatePosition = (id, pos) => {
-    setManualPositions(p => ({ ...p, [id]: pos }))
-    setGraph(g => ({
-      nodes: g.nodes.map(n => n.id === id ? { ...n, position: pos } : n),
-      edges: g.edges
-    }))
+    const avgNodeHeight = 140; // BASE_HEIGHT
+    const elkVerticalSpacing = 100; // Value used in elk.layoutOptions
+    const estimatedLayerHeight = avgNodeHeight + elkVerticalSpacing;
+    const calculatedLayerIndex = Math.max(0, Math.round(pos.y / estimatedLayerHeight));
+    setNodeLayerConstraints(prev => ({ ...prev, [id]: calculatedLayerIndex }));
+    // The setGraph call that was here is removed, as the graph will be updated by the useEffect hook
+    // when nodeLayerConstraints changes, triggering a new ELK layout.
   }
 
   return {
