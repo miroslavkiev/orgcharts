@@ -38,12 +38,16 @@ export default function Toolbar({ org }) {
       return
     }
     setVerticalHint('')
-    if (org.verticalMode) {
+    const togglingOn = !org.verticalMode
+    if (!togglingOn) {
       org.exitVerticalMode()
       await org.relayoutPreservingAnchor(org.lastClickedEmployeeId, 'all')
     } else {
       org.enterVerticalMode(org.lastClickedEmployeeId)
       await org.relayoutPreservingAnchor(org.lastClickedEmployeeId, 'vertical')
+      if (org.controls) {
+        org.controls.fitView({ padding: 0.3, duration: 600 })
+      }
     }
   }
 
@@ -98,7 +102,12 @@ export default function Toolbar({ org }) {
             <option key={name} value={name} />
           ))}
         </datalist>
-        <button type="submit" aria-label={t('search')} style={{ padding: '6px 12px' }}>
+        <button
+          type="submit"
+          aria-label={t('search')}
+          title={t('search')}
+          style={{ padding: '6px 12px' }}
+        >
           {t('search')}
         </button>
       </form>
@@ -165,6 +174,7 @@ export default function Toolbar({ org }) {
       <button
         onClick={() => org.controls && org.controls.fitView()}
         aria-label={t('fitView')}
+        title={t('fitView')}
         style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '6px 12px' }}
       >
         <ArrowsPointingOutIcon width={16} />
