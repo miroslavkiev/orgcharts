@@ -1,4 +1,4 @@
-import { useMemo, useReducer, useEffect, useState } from 'react'
+import { useMemo, useReducer, useEffect, useState, useCallback } from 'react'
 import ELK from 'elkjs/lib/elk.bundled.js'
 
 const BASE_HEIGHT = 140
@@ -167,6 +167,49 @@ export default function useOrgChart(rows) {
     }))
   }
 
+  const focusEmployee = useCallback(query => {
+    if (!query) return false
+
+    const normalizedQuery = query.trim().toLowerCase()
+    if (!normalizedQuery) return false
+
+    const allNames = Array.from(map.keys())
+    const exactMatch = allNames.find(name => name.toLowerCase() === normalizedQuery)
+    const partialMatch = allNames.find(name => name.toLowerCase().includes(normalizedQuery))
+    const targetName = exactMatch || partialMatch
+
+    if (!targetName) return false
+
+    const employee = map.get(targetName)
+    if (!employee) return false
+
+    const updates = {}
+    let currentManager = employee['Manager']?.trim()
+    while (currentManager) {
+      updates[currentManager] = false
+      const manager = map.get(currentManager)
+      currentManager = manager?.['Manager']?.trim()
+    }
+    if (Object.keys(updates).length > 0) {
+      setCollapsed(updates)
+    }
+
+    const focus = () => {
+      const node = graph.nodes.find(n => n.id === targetName)
+      if (!node || !controls) return false
+      controls.fitView({ nodes: [node], padding: 0.4, duration: 800 })
+      return true
+    }
+
+    if (!focus()) {
+      setTimeout(() => {
+        focus()
+      }, 100)
+    }
+
+    return true
+  }, [map, graph.nodes, controls])
+
   return {
     map,
     roots,
@@ -179,6 +222,7 @@ export default function useOrgChart(rows) {
     collapseAll,
     updatePosition,
     controls,
-    setControls
+    setControls,
+    focusEmployee
   }
 }

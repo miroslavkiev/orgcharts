@@ -6,5 +6,8 @@
   "zoomIn": "Zoom in",
   "zoomOut": "Zoom out",
   "fitView": "Fit view",
-  "language": "Language"
+  "language": "Language",
+  "search": "Search",
+  "searchPlaceholder": "Search employee",
+  "searchNotFound": "No employee found"
 }
