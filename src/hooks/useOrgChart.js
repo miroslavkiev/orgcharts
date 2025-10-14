@@ -53,15 +53,134 @@ function buildForest(rows) {
 export default function useOrgChart(rows) {
   const { map, roots, orphans } = useMemo(() => buildForest(rows), [rows])
 
-  const [collapsed, setCollapsed] = useReducer((s, a) => ({ ...s, ...a }), {})
+  const [collapsed, dispatchCollapsed] = useReducer((state, action) => {
+    if (typeof action === 'function') {
+      return action(state)
+    }
+    if (action && action.__replace) {
+      return action.value || {}
+    }
+    return { ...state, ...action }
+  }, {})
+
+  const setCollapsed = updates => {
+    dispatchCollapsed(updates)
+  }
 
   const [graph, setGraph] = useState({ nodes: [], edges: [] })
   const [manualPositions, setManualPositions] = useState({})
   const [controls, setControls] = useState(null)
+  const [lastClickedEmployeeId, setLastClickedEmployeeId] = useState(null)
+  const [verticalMode, setVerticalMode] = useState(false)
+  const [preVerticalState, setPreVerticalState] = useState(null)
+  const [verticalAllowedIds, setVerticalAllowedIds] = useState(null)
+  const [verticalFocusId, setVerticalFocusId] = useState(null)
+
+  const selectEmployee = useCallback(id => {
+    if (!id) return
+    setLastClickedEmployeeId(id)
+  }, [])
+
+  const allowedIdsSet = useMemo(() => {
+    if (!verticalAllowedIds) return null
+    return new Set(verticalAllowedIds)
+  }, [verticalAllowedIds])
 
   const toggleNode = id => {
     setCollapsed({ [id]: !collapsed[id] })
   }
+
+  const getManagersPath = useCallback(id => {
+    const path = []
+    let currentId = id
+    while (currentId) {
+      path.push(currentId)
+      const employee = map.get(currentId)
+      if (!employee) break
+      currentId = employee['Manager']?.trim()
+    }
+    return path
+  }, [map])
+
+  const getDescendants = useCallback(id => {
+    const employee = map.get(id)
+    if (!employee) return []
+    const collected = []
+    const stack = [employee]
+    while (stack.length > 0) {
+      const current = stack.pop()
+      if (!current) continue
+      collected.push(current.fullName)
+      current.children?.forEach(child => {
+        stack.push(child)
+      })
+    }
+    return collected
+  }, [map])
+
+  const updateVerticalAllowed = useCallback(id => {
+    if (!id) return
+    const path = getManagersPath(id)
+    const descendants = getDescendants(id)
+    const allowed = new Set([...path, ...descendants])
+    const updates = {}
+    allowed.forEach(nodeId => {
+      updates[nodeId] = false
+    })
+    if (allowed.size > 0) {
+      setCollapsed(updates)
+      setVerticalAllowedIds(Array.from(allowed))
+      setVerticalFocusId(id)
+    }
+  }, [getDescendants, getManagersPath, setCollapsed])
+
+  const enterVerticalMode = useCallback(id => {
+    if (!id) return
+    setPreVerticalState(prev => (prev === null ? { ...collapsed } : prev))
+    setVerticalMode(true)
+    updateVerticalAllowed(id)
+  }, [collapsed, updateVerticalAllowed])
+
+  const exitVerticalMode = useCallback(() => {
+    if (!verticalMode) return
+    if (preVerticalState) {
+      dispatchCollapsed({ __replace: true, value: preVerticalState })
+    }
+    setVerticalAllowedIds(null)
+    setVerticalMode(false)
+    setPreVerticalState(null)
+    setVerticalFocusId(null)
+  }, [preVerticalState, verticalMode])
+
+  useEffect(() => {
+    if (verticalMode && lastClickedEmployeeId) {
+      updateVerticalAllowed(lastClickedEmployeeId)
+    }
+  }, [lastClickedEmployeeId, updateVerticalAllowed, verticalMode])
+
+  useEffect(() => {
+    if (verticalMode && verticalFocusId) {
+      if (!map.has(verticalFocusId)) {
+        exitVerticalMode()
+      } else {
+        updateVerticalAllowed(verticalFocusId)
+      }
+    }
+  }, [exitVerticalMode, map, updateVerticalAllowed, verticalFocusId, verticalMode])
+
+  useEffect(() => {
+    if (lastClickedEmployeeId && !map.has(lastClickedEmployeeId)) {
+      setLastClickedEmployeeId(null)
+    }
+  }, [lastClickedEmployeeId, map])
+
+  useEffect(() => {
+    setLastClickedEmployeeId(null)
+    setVerticalMode(false)
+    setPreVerticalState(null)
+    setVerticalAllowedIds(null)
+    setVerticalFocusId(null)
+  }, [rows])
 
   const { nodes, edges } = useMemo(() => {
     const n = []
@@ -69,7 +188,10 @@ export default function useOrgChart(rows) {
 
     const traverse = (emp, parentId, fromOrphanRoot) => {
       const id = emp.fullName
-      const isCollapsed = collapsed[id]
+      if (verticalMode && allowedIdsSet && !allowedIdsSet.has(id)) {
+        return
+      }
+      const isCollapsed = verticalMode ? false : collapsed[id]
       n.push({
         id,
         type: 'employee',
@@ -77,7 +199,13 @@ export default function useOrgChart(rows) {
         width: 220,
         height: getNodeHeight(emp),
         draggable: true,
-        data: { emp, collapsed: isCollapsed, toggle: () => toggleNode(id), fromOrphanRoot }
+        data: {
+          emp,
+          collapsed: isCollapsed,
+          toggle: () => toggleNode(id),
+          fromOrphanRoot,
+          select: () => selectEmployee(id)
+        }
       })
       if (parentId) {
         e.push({ id: `${parentId}-${id}`, source: parentId, target: id })
@@ -90,7 +218,7 @@ export default function useOrgChart(rows) {
     roots.forEach(r => traverse(r, null, r.noManager))
 
     return { nodes: n, edges: e }
-  }, [roots, collapsed])
+  }, [roots, collapsed, verticalMode, allowedIdsSet, toggleNode, selectEmployee])
 
   useEffect(() => {
     const elk = new ELK()
@@ -223,6 +351,12 @@ export default function useOrgChart(rows) {
     updatePosition,
     controls,
     setControls,
-    focusEmployee
+    focusEmployee,
+    lastClickedEmployeeId,
+    selectEmployee,
+    verticalMode,
+    enterVerticalMode,
+    exitVerticalMode,
+    verticalFocusId
   }
 }

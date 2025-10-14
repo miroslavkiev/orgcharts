@@ -1,4 +1,4 @@
-import React, { useMemo, useState } from 'react'
+import React, { useEffect, useMemo, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { ArrowsPointingOutIcon } from '@heroicons/react/24/outline'
 
@@ -6,6 +6,7 @@ export default function Toolbar({ org }) {
   const { t, i18n } = useTranslation()
   const [searchTerm, setSearchTerm] = useState('')
   const [notFound, setNotFound] = useState(false)
+  const [verticalHint, setVerticalHint] = useState('')
 
   const employeeNames = useMemo(() => {
     if (!org?.map) return []
@@ -28,6 +29,27 @@ export default function Toolbar({ org }) {
       setNotFound(false)
     }
   }
+
+  const isVerticalDisabled = !org.lastClickedEmployeeId
+
+  const handleVerticalToggle = () => {
+    if (isVerticalDisabled) {
+      setVerticalHint(t('verticalChainHint'))
+      return
+    }
+    setVerticalHint('')
+    if (org.verticalMode) {
+      org.exitVerticalMode()
+    } else {
+      org.enterVerticalMode(org.lastClickedEmployeeId)
+    }
+  }
+
+  useEffect(() => {
+    if (org.lastClickedEmployeeId) {
+      setVerticalHint('')
+    }
+  }, [org.lastClickedEmployeeId])
 
   return (
     <div
@@ -69,6 +91,25 @@ export default function Toolbar({ org }) {
       {notFound && (
         <div style={{ color: '#b91c1c', fontSize: 12 }}>{t('searchNotFound')}</div>
       )}
+      <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-start', gap: 4 }}>
+        <button
+          type="button"
+          onClick={handleVerticalToggle}
+          aria-label={t('verticalChain')}
+          aria-pressed={org.verticalMode}
+          aria-disabled={isVerticalDisabled}
+          style={{
+            padding: '6px 12px',
+            opacity: isVerticalDisabled ? 0.5 : 1,
+            cursor: isVerticalDisabled ? 'not-allowed' : 'pointer'
+          }}
+        >
+          {t('verticalChain')}
+        </button>
+        {verticalHint && (
+          <div style={{ fontSize: 12, color: '#1f2937', maxWidth: 200 }}>{verticalHint}</div>
+        )}
+      </div>
       <button onClick={org.expandAll} aria-label={t('expandAll')} style={{ padding: '6px 12px' }}>
         {t('expandAll')}
       </button>
