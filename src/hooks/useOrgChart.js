@@ -80,6 +80,7 @@ export default function useOrgChart(rows) {
   const layoutPromiseRef = useRef(null)
   const graphRef = useRef({ nodes: [], edges: [] })
   const manualPositionsRef = useRef({})
+  const viewportHelpersRef = useRef(null)
   const elkRef = useRef(null)
 
   useEffect(() => {
@@ -394,6 +395,31 @@ export default function useOrgChart(rows) {
     [controls]
   )
 
+  const setViewportHelpers = useCallback(helpers => {
+    viewportHelpersRef.current = helpers
+  }, [])
+
+  const fitVisibleNodes = useCallback((padding, duration) => {
+    if (!viewportHelpersRef.current?.fitVisibleNodes) {
+      return Promise.resolve()
+    }
+    return viewportHelpersRef.current.fitVisibleNodes(padding, duration)
+  }, [])
+
+  const centerOnNodeIfVisible = useCallback((nodeId, duration) => {
+    if (!viewportHelpersRef.current?.centerOnNodeIfVisible) {
+      return Promise.resolve()
+    }
+    return viewportHelpersRef.current.centerOnNodeIfVisible(nodeId, duration)
+  }, [])
+
+  const afterLayoutTick = useCallback(() => {
+    if (!viewportHelpersRef.current?.afterLayoutTick) {
+      return Promise.resolve()
+    }
+    return viewportHelpersRef.current.afterLayoutTick()
+  }, [])
+
   const getNodeWorldPosition = useCallback(id => {
     if (!id) return null
     const node = graphRef.current.nodes.find(n => n.id === id)
@@ -509,6 +535,7 @@ export default function useOrgChart(rows) {
     updatePosition,
     controls,
     setControls,
+    setViewportHelpers,
     focusEmployee,
     lastClickedEmployeeId,
     selectEmployee,
@@ -518,6 +545,9 @@ export default function useOrgChart(rows) {
     verticalFocusId,
     recomputeLayout,
     relayoutPreservingAnchor,
+    fitVisibleNodes,
+    centerOnNodeIfVisible,
+    afterLayoutTick,
     getViewport,
     setViewport,
     getNodeScreenPosition,

@@ -1,7 +1,22 @@
 import { useTranslation } from "react-i18next"
 import React, { useCallback, useEffect, useMemo } from 'react'
 import ReactFlow, { Controls, MiniMap } from 'reactflow'
+import { useViewportHelpers } from '../graph/viewport'
 import EmployeeNode from './EmployeeNode'
+
+function ViewportBridge({ org }) {
+  const helpers = useViewportHelpers()
+  const { setViewportHelpers } = org
+
+  useEffect(() => {
+    setViewportHelpers(helpers)
+    return () => {
+      setViewportHelpers(null)
+    }
+  }, [setViewportHelpers, helpers])
+
+  return null
+}
 
 export default function OrgCanvas({ org }) {
   const { t } = useTranslation()
@@ -35,6 +50,7 @@ export default function OrgCanvas({ org }) {
         onNodeDragStop={handleDragStop}
         fitView
       >
+        <ViewportBridge org={org} />
         <Controls showInteractive={false} />
         <MiniMap />
       </ReactFlow>
