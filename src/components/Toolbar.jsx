@@ -32,7 +32,7 @@ export default function Toolbar({ org }) {
 
   const isVerticalDisabled = !org.lastClickedEmployeeId
 
-  const handleVerticalToggle = () => {
+  const handleVerticalToggle = async () => {
     if (isVerticalDisabled) {
       setVerticalHint(t('verticalChainHint'))
       return
@@ -40,9 +40,21 @@ export default function Toolbar({ org }) {
     setVerticalHint('')
     if (org.verticalMode) {
       org.exitVerticalMode()
+      await org.relayoutPreservingAnchor(org.lastClickedEmployeeId, 'all')
     } else {
       org.enterVerticalMode(org.lastClickedEmployeeId)
+      await org.relayoutPreservingAnchor(org.lastClickedEmployeeId, 'vertical')
     }
+  }
+
+  const handleExpandAll = async () => {
+    org.expandAll()
+    await org.relayoutPreservingAnchor(org.lastClickedEmployeeId, 'all')
+  }
+
+  const handleCollapseAll = async () => {
+    org.collapseAll()
+    await org.relayoutPreservingAnchor(org.lastClickedEmployeeId, 'all')
   }
 
   useEffect(() => {
@@ -61,7 +73,9 @@ export default function Toolbar({ org }) {
         zIndex: 10,
         display: 'flex',
         gap: 10,
-        flexWrap: 'wrap',
+        flexWrap: 'nowrap',
+        overflowX: 'auto',
+        whiteSpace: 'nowrap',
         alignItems: 'center',
         background: 'rgba(255, 255, 255, 0.95)',
         padding: '8px 16px',
@@ -96,25 +110,57 @@ export default function Toolbar({ org }) {
           type="button"
           onClick={handleVerticalToggle}
           aria-label={t('verticalChain')}
+          title={t('verticalChain')}
           aria-pressed={org.verticalMode}
           aria-disabled={isVerticalDisabled}
           style={{
             padding: '6px 12px',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
             opacity: isVerticalDisabled ? 0.5 : 1,
             cursor: isVerticalDisabled ? 'not-allowed' : 'pointer'
           }}
         >
-          {t('verticalChain')}
+          <svg aria-hidden="true" width="18" height="18" viewBox="0 0 24 24">
+            <path d="M11 4a1 1 0 1 1 2 0v4h2.5a3.5 3.5 0 1 1 0 7H13v5a1 1 0 1 1-2 0v-5H8.5a3.5 3.5 0 1 1 0-7H11V4Z" />
+          </svg>
         </button>
         {verticalHint && (
           <div style={{ fontSize: 12, color: '#1f2937', maxWidth: 200 }}>{verticalHint}</div>
         )}
       </div>
-      <button onClick={org.expandAll} aria-label={t('expandAll')} style={{ padding: '6px 12px' }}>
-        {t('expandAll')}
+      <button
+        onClick={handleExpandAll}
+        aria-label={t('expandAll')}
+        title={t('expandAll')}
+        style={{ padding: '6px 12px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}
+      >
+        <svg aria-hidden="true" width="18" height="18" viewBox="0 0 24 24">
+          <path d="M4 10V4h6M20 14v6h-6M20 10V4h-6M4 14v6h6" />
+          <path
+            d="M10 4L4 10M20 14l-6 6M14 4l6 6M4 14l6 6"
+            fill="none"
+            stroke="currentColor"
+            strokeWidth="2"
+          />
+        </svg>
       </button>
-      <button onClick={org.collapseAll} aria-label={t('collapseAll')} style={{ padding: '6px 12px' }}>
-        {t('collapseAll')}
+      <button
+        onClick={handleCollapseAll}
+        aria-label={t('collapseAll')}
+        title={t('collapseAll')}
+        style={{ padding: '6px 12px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}
+      >
+        <svg aria-hidden="true" width="18" height="18" viewBox="0 0 24 24">
+          <path d="M10 20H4v-6M14 4h6v6M14 20h6v-6M10 4H4v6" />
+          <path
+            d="M4 6l6-2M20 18l-6 2M20 6l-6 2M4 18l6 2"
+            fill="none"
+            stroke="currentColor"
+            strokeWidth="2"
+          />
+        </svg>
       </button>
       <button
         onClick={() => org.controls && org.controls.fitView()}
