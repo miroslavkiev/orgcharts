@@ -9,5 +9,7 @@
   "language": "Language",
   "search": "Search",
   "searchPlaceholder": "Search employee",
-  "searchNotFound": "No employee found"
+  "searchNotFound": "No employee found",
+  "verticalChain": "Vertical chain",
+  "verticalChainHint": "Click an employee card to enable Vertical chain."
 }
