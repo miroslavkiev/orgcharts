@@ -1,4 +1,4 @@
-import { useMemo, useReducer, useEffect, useState, useCallback } from 'react'
+import { useMemo, useReducer, useEffect, useState, useCallback, useRef } from 'react'
 import ELK from 'elkjs/lib/elk.bundled.js'
 
 const BASE_HEIGHT = 140
@@ -75,6 +75,20 @@ export default function useOrgChart(rows) {
   const [preVerticalState, setPreVerticalState] = useState(null)
   const [verticalAllowedIds, setVerticalAllowedIds] = useState(null)
   const [verticalFocusId, setVerticalFocusId] = useState(null)
+  const [layoutTrigger, setLayoutTrigger] = useState(0)
+  const layoutScopeRef = useRef('all')
+  const layoutPromiseRef = useRef(null)
+  const graphRef = useRef({ nodes: [], edges: [] })
+  const manualPositionsRef = useRef({})
+  const elkRef = useRef(null)
+
+  useEffect(() => {
+    graphRef.current = graph
+  }, [graph])
+
+  useEffect(() => {
+    manualPositionsRef.current = manualPositions
+  }, [manualPositions])
 
   const selectEmployee = useCallback(id => {
     if (!id) return
@@ -182,7 +196,7 @@ export default function useOrgChart(rows) {
     setVerticalFocusId(null)
   }, [rows])
 
-  const { nodes, edges } = useMemo(() => {
+  const { nodes: layoutNodes, edges: layoutEdges } = useMemo(() => {
     const n = []
     const e = []
 
@@ -221,59 +235,121 @@ export default function useOrgChart(rows) {
   }, [roots, collapsed, verticalMode, allowedIdsSet, toggleNode, selectEmployee])
 
   useEffect(() => {
-    const elk = new ELK()
+    const ensureElk = () => {
+      if (!elkRef.current) {
+        elkRef.current = new ELK()
+      }
+      return elkRef.current
+    }
+
     const layout = async () => {
-      const verticalSpacing = 100
-      const horizontalSpacing = Math.max(window.innerWidth * 0.05, 60)
+      const elk = ensureElk()
+      const scope = layoutScopeRef.current
+      const windowWidth = typeof window !== 'undefined' ? window.innerWidth : 1200
+      const verticalSpacing = scope === 'vertical' ? 80 : 140
+      const horizontalSpacing = scope === 'vertical'
+        ? Math.max(windowWidth * 0.025, 40)
+        : Math.max(windowWidth * 0.05, 80)
       const graphDef = {
         id: 'root',
         layoutOptions: {
           'elk.algorithm': 'layered',
           'elk.direction': 'DOWN',
-          'spacing.nodeNode': '100',
+          'elk.layered.spacing.nodeNodeBetweenLayers': verticalSpacing,
           'elk.spacing.nodeNodeBetweenLayers': verticalSpacing,
-          'elk.spacing.nodeNode': horizontalSpacing
+          'elk.spacing.nodeNode': horizontalSpacing,
+          'elk.layered.nodePlacement.strategy': scope === 'vertical' ? 'NETWORK_SIMPLEX' : 'BRANDES_KOEPF'
         },
-        children: nodes.map(n => ({
+        children: layoutNodes.map(n => ({
           id: n.id,
           width: 220,
           height: getNodeHeight(n.data.emp)
         })),
-        edges: edges.map(e => ({ id: e.id, sources: [e.source], targets: [e.target] }))
+        edges: layoutEdges.map(e => ({ id: e.id, sources: [e.source], targets: [e.target] }))
       }
+      const resolvePendingLayout = () => {
+        const resolver = layoutPromiseRef.current?.resolve
+        layoutPromiseRef.current = null
+        if (resolver) resolver()
+      }
+
       try {
         const res = await elk.layout(graphDef)
         const positions = {}
         res.children?.forEach(c => { positions[c.id] = { x: c.x, y: c.y } })
 
-        // Find max X among nodes that are not part of an orphan tree
         let maxX = 0
         res.children?.forEach(c => {
-          const node = nodes.find(n => n.id === c.id)
+          const node = layoutNodes.find(n => n.id === c.id)
           if (node && !node.data.fromOrphanRoot) {
             if (c.x > maxX) maxX = c.x
           }
         })
         const offset = horizontalSpacing * 5
 
-        setGraph({
-          nodes: nodes.map(n => {
+        const nextGraph = {
+          nodes: layoutNodes.map(n => {
             let pos = positions[n.id] || { x: 0, y: 0 }
-            if (manualPositions[n.id]) {
-              pos = manualPositions[n.id]
+            const manualPos = manualPositionsRef.current[n.id]
+            if (manualPos) {
+              pos = manualPos
             } else if (n.data.fromOrphanRoot) {
               pos = { x: maxX + offset + pos.x, y: pos.y }
             }
             return { ...n, position: pos }
           }),
-          edges
-        })
+          edges: layoutEdges
+        }
+        if (!cancelled) {
+          graphRef.current = nextGraph
+          setGraph(nextGraph)
+        }
+        resolvePendingLayout()
       } catch (err) {
-        setGraph({ nodes, edges })
+        const fallback = { nodes: layoutNodes, edges: layoutEdges }
+        if (!cancelled) {
+          graphRef.current = fallback
+          setGraph(fallback)
+        }
+        resolvePendingLayout()
       }
     }
-    layout()
-  }, [nodes, edges])
+
+    let cancelled = false
+
+    layout().catch(() => {
+      if (!cancelled) {
+        const resolver = layoutPromiseRef.current?.resolve
+        layoutPromiseRef.current = null
+        if (resolver) resolver()
+      }
+    })
+
+    return () => {
+      cancelled = true
+      const resolver = layoutPromiseRef.current?.resolve
+      layoutPromiseRef.current = null
+      if (resolver) resolver()
+    }
+  }, [layoutNodes, layoutEdges, layoutTrigger])
+
+  const scheduleLayout = useCallback(scope => {
+    const requestedScope = scope || 'all'
+    layoutScopeRef.current = requestedScope
+    return new Promise(resolve => {
+      layoutPromiseRef.current = { resolve }
+      setLayoutTrigger(t => t + 1)
+    })
+  }, [])
+
+  const recomputeLayout = useCallback(scope => {
+    const requestedScope = scope || 'all'
+    if (requestedScope === 'vertical' || requestedScope === 'all') {
+      manualPositionsRef.current = {}
+      setManualPositions({})
+    }
+    return scheduleLayout(requestedScope)
+  }, [scheduleLayout])
 
   const expandAll = () => {
     const updates = {}
@@ -288,12 +364,94 @@ export default function useOrgChart(rows) {
   }
 
   const updatePosition = (id, pos) => {
-    setManualPositions(p => ({ ...p, [id]: pos }))
-    setGraph(g => ({
-      nodes: g.nodes.map(n => n.id === id ? { ...n, position: pos } : n),
-      edges: g.edges
-    }))
+    setManualPositions(p => {
+      const next = { ...p, [id]: pos }
+      manualPositionsRef.current = next
+      return next
+    })
+    setGraph(g => {
+      const nextGraph = {
+        nodes: g.nodes.map(n => (n.id === id ? { ...n, position: pos } : n)),
+        edges: g.edges
+      }
+      graphRef.current = nextGraph
+      return nextGraph
+    })
   }
+
+  const getViewport = useCallback(() => {
+    if (!controls) return null
+    const { x, y, zoom } = controls.getViewport()
+    return { x, y, k: zoom }
+  }, [controls])
+
+  const setViewport = useCallback(
+    view => {
+      if (!controls || !view) return
+      const { x, y, k } = view
+      controls.setViewport({ x, y, zoom: k }, { duration: 0 })
+    },
+    [controls]
+  )
+
+  const getNodeWorldPosition = useCallback(id => {
+    if (!id) return null
+    const node = graphRef.current.nodes.find(n => n.id === id)
+    if (!node) return null
+    const width = node.width ?? 220
+    const height = node.height ?? (node.data?.emp ? getNodeHeight(node.data.emp) : 0)
+    return { x: node.position.x + width / 2, y: node.position.y + height / 2 }
+  }, [])
+
+  const getNodeScreenPosition = useCallback(id => {
+    const viewport = getViewport()
+    const world = getNodeWorldPosition(id)
+    if (!viewport || !world) return null
+    return {
+      x: world.x * viewport.k + viewport.x,
+      y: world.y * viewport.k + viewport.y
+    }
+  }, [getViewport, getNodeWorldPosition])
+
+  const toWorld = useCallback(point => {
+    if (!controls || !point) return point
+    return controls.project(point)
+  }, [controls])
+
+  const toScreen = useCallback(point => {
+    const viewport = getViewport()
+    if (!viewport || !point) return point
+    return {
+      x: point.x * viewport.k + viewport.x,
+      y: point.y * viewport.k + viewport.y
+    }
+  }, [getViewport])
+
+  const relayoutPreservingAnchor = useCallback(
+    async (anchorId, scope) => {
+      const hadAnchor = Boolean(anchorId)
+      const prevViewport = getViewport()
+      const prevScreen = hadAnchor ? getNodeScreenPosition(anchorId) : null
+
+      await recomputeLayout(scope)
+
+      if (hadAnchor && prevScreen) {
+        const anchorWorld = getNodeWorldPosition(anchorId)
+        if (anchorWorld && prevViewport) {
+          const k = prevViewport.k
+          const newPan = {
+            x: prevScreen.x - anchorWorld.x * k,
+            y: prevScreen.y - anchorWorld.y * k,
+            k
+          }
+          setViewport(newPan)
+        }
+      } else if (prevViewport) {
+        setViewport(prevViewport)
+      }
+    },
+    [getViewport, getNodeScreenPosition, recomputeLayout, getNodeWorldPosition, setViewport]
+  )
 
   const focusEmployee = useCallback(query => {
     if (!query) return false
@@ -357,6 +515,14 @@ export default function useOrgChart(rows) {
     verticalMode,
     enterVerticalMode,
     exitVerticalMode,
-    verticalFocusId
+    verticalFocusId,
+    recomputeLayout,
+    relayoutPreservingAnchor,
+    getViewport,
+    setViewport,
+    getNodeScreenPosition,
+    getNodeWorldPosition,
+    toWorld,
+    toScreen
   }
 }
