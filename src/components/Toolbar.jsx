@@ -38,23 +38,41 @@ export default function Toolbar({ org }) {
       return
     }
     setVerticalHint('')
+    const anchorId = org.lastClickedEmployeeId
     if (org.verticalMode) {
       org.exitVerticalMode()
-      await org.relayoutPreservingAnchor(org.lastClickedEmployeeId, 'all')
+      await org.recomputeLayout('all')
     } else {
-      org.enterVerticalMode(org.lastClickedEmployeeId)
-      await org.relayoutPreservingAnchor(org.lastClickedEmployeeId, 'vertical')
+      org.enterVerticalMode(anchorId)
+      await org.recomputeLayout('vertical')
+    }
+    await org.afterLayoutTick()
+    await org.fitVisibleNodes(0.18, 280)
+    if (anchorId) {
+      await org.centerOnNodeIfVisible(anchorId, 220)
     }
   }
 
   const handleExpandAll = async () => {
+    const anchorId = org.lastClickedEmployeeId
     org.expandAll()
-    await org.relayoutPreservingAnchor(org.lastClickedEmployeeId, 'all')
+    await org.recomputeLayout('all')
+    await org.afterLayoutTick()
+    await org.fitVisibleNodes(0.18, 280)
+    if (anchorId) {
+      await org.centerOnNodeIfVisible(anchorId, 220)
+    }
   }
 
   const handleCollapseAll = async () => {
+    const anchorId = org.lastClickedEmployeeId
     org.collapseAll()
-    await org.relayoutPreservingAnchor(org.lastClickedEmployeeId, 'all')
+    await org.recomputeLayout('all')
+    await org.afterLayoutTick()
+    await org.fitVisibleNodes(0.18, 280)
+    if (anchorId) {
+      await org.centerOnNodeIfVisible(anchorId, 220)
+    }
   }
 
   useEffect(() => {
