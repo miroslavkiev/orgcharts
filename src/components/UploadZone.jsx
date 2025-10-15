@@ -2,6 +2,7 @@ import React from 'react'
 import { useTranslation } from 'react-i18next'
 import Papa from 'papaparse'
 import toast from 'react-hot-toast'
+import Tooltip from './Tooltip'
 
 export default function UploadZone({ onData }) {
   const { t } = useTranslation()
@@ -24,12 +25,14 @@ export default function UploadZone({ onData }) {
 
   return (
     <div style={{ padding: 20 }}>
-      <input
-        type="file"
-        accept=".csv,text/csv"
-        onChange={handleFile}
-        aria-label={t('upload')}
-      />
+      <Tooltip label={t('toolbar.chooseFile')} placement="below">
+        <input
+          type="file"
+          accept=".csv,text/csv"
+          onChange={handleFile}
+          aria-label={t('toolbar.chooseFile')}
+        />
+      </Tooltip>
     </div>
   )
 }

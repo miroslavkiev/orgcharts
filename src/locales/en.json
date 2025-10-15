@@ -11,5 +11,16 @@
   "searchPlaceholder": "Search employee",
   "searchNotFound": "No employee found",
   "verticalChain": "Vertical chain",
-  "verticalChainHint": "Click an employee card to enable Vertical chain."
+  "verticalChainHint": "Click an employee card to enable Vertical chain.",
+  "toolbar": {
+    "chooseFile": "Choose CSV",
+    "search": "Search",
+    "verticalChain": "Vertical chain",
+    "expandAll": "Expand all",
+    "collapseAll": "Collapse all",
+    "fitView": "Fit view",
+    "zoomIn": "Zoom in",
+    "zoomOut": "Zoom out",
+    "language": "Language"
+  }
 }

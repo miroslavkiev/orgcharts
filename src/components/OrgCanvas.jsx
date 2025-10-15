@@ -21,9 +21,9 @@ export default function OrgCanvas({ org }) {
 
   useEffect(() => {
     if (org.controls) {
-      org.controls.fitView()
+      org.fitView()
     }
-  }, [org.controls, org.roots.length])
+  }, [org.controls, org.fitView, org.roots.length])
 
   return (
     <div style={{ width: '100%', height: '80vh' }}>

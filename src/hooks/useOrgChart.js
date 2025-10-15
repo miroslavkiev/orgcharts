@@ -1,8 +1,16 @@
 import { useMemo, useReducer, useEffect, useState, useCallback, useRef } from 'react'
 import ELK from 'elkjs/lib/elk.bundled.js'
+import { buildForest, computeManagersPath, collectDescendants } from '../utils/tree'
+import { batchUpdates } from '../utils/batch'
+import { measurePerformance, markPoint, setPerformanceThreshold } from '../utils/performance'
+import { measureViewportUpdate, waitForLayoutFrame } from '../utils/viewport'
 
 const BASE_HEIGHT = 140
 const LINE_HEIGHT = 22
+
+setPerformanceThreshold('vertical:update', 200)
+setPerformanceThreshold('layout:elk', 500)
+setPerformanceThreshold('viewport:fit', 200)
 
 function countExtraFields(employee) {
   return Object.entries(employee).filter(([key, val]) =>
@@ -20,38 +28,11 @@ function getNodeHeight(employee) {
   return BASE_HEIGHT + countExtraFields(employee) * LINE_HEIGHT
 }
 
-function buildForest(rows) {
-  const map = new Map()
-  const roots = []
-  const orphans = []
-
-  rows.forEach(r => {
-    const fullName = r['Name Surname']?.trim()
-    if (!fullName) return
-    map.set(fullName, { ...r, fullName, children: [] })
-  })
-
-  map.forEach(emp => {
-    const mgrName = emp['Manager']?.trim()
-    if (mgrName) {
-      const mgr = map.get(mgrName)
-      if (mgr) {
-        mgr.children.push(emp)
-      } else {
-        emp.noManager = true
-        orphans.push(emp)
-        roots.push(emp)
-      }
-    } else {
-      roots.push(emp)
-    }
-  })
-
-  return { map, roots, orphans }
-}
-
 export default function useOrgChart(rows) {
-  const { map, roots, orphans } = useMemo(() => buildForest(rows), [rows])
+  const { map, roots, orphans, parentById, childrenById, signature } = useMemo(
+    () => buildForest(rows),
+    [rows]
+  )
 
   const [collapsed, dispatchCollapsed] = useReducer((state, action) => {
     if (typeof action === 'function') {
@@ -81,6 +62,7 @@ export default function useOrgChart(rows) {
   const graphRef = useRef({ nodes: [], edges: [] })
   const manualPositionsRef = useRef({})
   const elkRef = useRef(null)
+  const verticalCacheRef = useRef({ id: null, signature: null, allowedArray: null, collapsedUpdates: null })
 
   useEffect(() => {
     graphRef.current = graph
@@ -90,9 +72,15 @@ export default function useOrgChart(rows) {
     manualPositionsRef.current = manualPositions
   }, [manualPositions])
 
+  useEffect(() => {
+    verticalCacheRef.current = { id: null, signature, allowedArray: null, collapsedUpdates: null }
+  }, [signature])
+
   const selectEmployee = useCallback(id => {
     if (!id) return
-    setLastClickedEmployeeId(id)
+    measurePerformance('selection:change', () => {
+      setLastClickedEmployeeId(id)
+    })
   }, [])
 
   const allowedIdsSet = useMemo(() => {
@@ -105,65 +93,83 @@ export default function useOrgChart(rows) {
   }
 
   const getManagersPath = useCallback(id => {
-    const path = []
-    let currentId = id
-    while (currentId) {
-      path.push(currentId)
-      const employee = map.get(currentId)
-      if (!employee) break
-      currentId = employee['Manager']?.trim()
-    }
-    return path
-  }, [map])
+    if (!id) return []
+    return computeManagersPath(id, parentById)
+  }, [parentById])
 
   const getDescendants = useCallback(id => {
-    const employee = map.get(id)
-    if (!employee) return []
-    const collected = []
-    const stack = [employee]
-    while (stack.length > 0) {
-      const current = stack.pop()
-      if (!current) continue
-      collected.push(current.fullName)
-      current.children?.forEach(child => {
-        stack.push(child)
-      })
-    }
-    return collected
-  }, [map])
+    if (!id) return []
+    return collectDescendants(id, childrenById)
+  }, [childrenById])
 
   const updateVerticalAllowed = useCallback(id => {
     if (!id) return
-    const path = getManagersPath(id)
-    const descendants = getDescendants(id)
-    const allowed = new Set([...path, ...descendants])
-    const updates = {}
-    allowed.forEach(nodeId => {
-      updates[nodeId] = false
+    measurePerformance('vertical:update', () => {
+      const cache = verticalCacheRef.current
+      const forestSignature = signature
+      let allowedArray = cache.allowedArray
+      let collapsedUpdates = cache.collapsedUpdates
+
+      if (cache.id !== id || cache.signature !== forestSignature) {
+        const path = getManagersPath(id)
+        const descendants = getDescendants(id)
+        const allowedSet = new Set([...path, ...descendants])
+        const updates = {}
+        allowedSet.forEach(nodeId => {
+          updates[nodeId] = false
+        })
+        allowedArray = Array.from(allowedSet)
+        collapsedUpdates = updates
+        verticalCacheRef.current = {
+          id,
+          signature: forestSignature,
+          allowedArray,
+          collapsedUpdates
+        }
+      } else {
+        markPoint('vertical:update:cache-hit')
+      }
+
+      if (!allowedArray || allowedArray.length === 0) {
+        return
+      }
+
+      measurePerformance('vertical:applyVisibility', () => {
+        batchUpdates(() => {
+          if (collapsedUpdates) {
+            setCollapsed(collapsedUpdates)
+          }
+          setVerticalAllowedIds(allowedArray)
+          setVerticalFocusId(id)
+        })
+      })
     })
-    if (allowed.size > 0) {
-      setCollapsed(updates)
-      setVerticalAllowedIds(Array.from(allowed))
-      setVerticalFocusId(id)
-    }
-  }, [getDescendants, getManagersPath, setCollapsed])
+  }, [getDescendants, getManagersPath, setCollapsed, signature])
 
   const enterVerticalMode = useCallback(id => {
     if (!id) return
-    setPreVerticalState(prev => (prev === null ? { ...collapsed } : prev))
-    setVerticalMode(true)
+    measurePerformance('vertical:enter', () => {
+      batchUpdates(() => {
+        setPreVerticalState(prev => (prev === null ? { ...collapsed } : prev))
+        setVerticalMode(true)
+      })
+    })
     updateVerticalAllowed(id)
   }, [collapsed, updateVerticalAllowed])
 
   const exitVerticalMode = useCallback(() => {
     if (!verticalMode) return
-    if (preVerticalState) {
-      dispatchCollapsed({ __replace: true, value: preVerticalState })
-    }
-    setVerticalAllowedIds(null)
-    setVerticalMode(false)
-    setPreVerticalState(null)
-    setVerticalFocusId(null)
+    measurePerformance('vertical:exit', () => {
+      batchUpdates(() => {
+        if (preVerticalState) {
+          dispatchCollapsed({ __replace: true, value: preVerticalState })
+        }
+        setVerticalAllowedIds(null)
+        setVerticalMode(false)
+        setPreVerticalState(null)
+        setVerticalFocusId(null)
+      })
+    })
   }, [preVerticalState, verticalMode])
 
   useEffect(() => {
@@ -196,43 +202,49 @@ export default function useOrgChart(rows) {
     setVerticalFocusId(null)
   }, [rows])
 
-  const { nodes: layoutNodes, edges: layoutEdges } = useMemo(() => {
-    const n = []
-    const e = []
+  const { nodes: layoutNodes, edges: layoutEdges } = useMemo(
+    () => measurePerformance('layout:prepare', () => {
+      const n = []
+      const e = []
 
-    const traverse = (emp, parentId, fromOrphanRoot) => {
-      const id = emp.fullName
-      if (verticalMode && allowedIdsSet && !allowedIdsSet.has(id)) {
-        return
-      }
-      const isCollapsed = verticalMode ? false : collapsed[id]
-      n.push({
-        id,
-        type: 'employee',
-        position: { x: 0, y: 0 },
-        width: 220,
-        height: getNodeHeight(emp),
-        draggable: true,
-        data: {
-          emp,
-          collapsed: isCollapsed,
-          toggle: () => toggleNode(id),
-          fromOrphanRoot,
-          select: () => selectEmployee(id)
+      const traverse = (emp, parentId, fromOrphanRoot) => {
+        const id = emp.fullName
+        if (verticalMode && allowedIdsSet && !allowedIdsSet.has(id)) {
+          return
         }
-      })
-      if (parentId) {
-        e.push({ id: `${parentId}-${id}`, source: parentId, target: id })
+        const isCollapsed = verticalMode ? false : collapsed[id]
+        n.push({
+          id,
+          type: 'employee',
+          position: { x: 0, y: 0 },
+          width: 220,
+          height: getNodeHeight(emp),
+          draggable: true,
+          data: {
+            emp,
+            collapsed: isCollapsed,
+            toggle: () => toggleNode(id),
+            fromOrphanRoot,
+            select: () => selectEmployee(id)
+          }
+        })
+        if (parentId) {
+          e.push({ id: `${parentId}-${id}`, source: parentId, target: id })
+        }
+        if (!isCollapsed) {
+          emp.children.forEach(c => traverse(c, id, fromOrphanRoot))
+        }
       }
-      if (!isCollapsed) {
-        emp.children.forEach(c => traverse(c, id, fromOrphanRoot))
-      }
-    }
 
-    roots.forEach(r => traverse(r, null, r.noManager))
+      roots.forEach(r => traverse(r, null, r.noManager))
 
-    return { nodes: n, edges: e }
-  }, [roots, collapsed, verticalMode, allowedIdsSet, toggleNode, selectEmployee])
+      markPoint('layout:edgeRouting:start')
+      markPoint('layout:edgeRouting:end')
+
+      return { nodes: n, edges: e }
+    }),
+    [roots, collapsed, verticalMode, allowedIdsSet, toggleNode, selectEmployee]
+  )
 
   useEffect(() => {
     const ensureElk = () => {
@@ -274,20 +286,23 @@ export default function useOrgChart(rows) {
       }
 
       try {
-        const res = await elk.layout(graphDef)
+        const layoutNodeMap = new Map(layoutNodes.map(n => [n.id, n]))
+        const res = await measurePerformance('layout:elk', () => elk.layout(graphDef))
         const positions = {}
         res.children?.forEach(c => { positions[c.id] = { x: c.x, y: c.y } })
 
         let maxX = 0
         res.children?.forEach(c => {
-          const node = layoutNodes.find(n => n.id === c.id)
+          const node = layoutNodeMap.get(c.id)
           if (node && !node.data.fromOrphanRoot) {
             if (c.x > maxX) maxX = c.x
           }
         })
         const offset = horizontalSpacing * 5
 
-        const nextGraph = {
+        measurePerformance('layout:edgeRouting', () => layoutEdges.length)
+
+        const nextGraph = measurePerformance('layout:applyPositions', () => ({
           nodes: layoutNodes.map(n => {
             let pos = positions[n.id] || { x: 0, y: 0 }
             const manualPos = manualPositionsRef.current[n.id]
@@ -299,17 +314,21 @@ export default function useOrgChart(rows) {
             return { ...n, position: pos }
           }),
           edges: layoutEdges
-        }
+        }))
         if (!cancelled) {
-          graphRef.current = nextGraph
-          setGraph(nextGraph)
+          measurePerformance('react:setGraph', () => {
+            graphRef.current = nextGraph
+            setGraph(nextGraph)
+          })
         }
         resolvePendingLayout()
       } catch (err) {
         const fallback = { nodes: layoutNodes, edges: layoutEdges }
         if (!cancelled) {
-          graphRef.current = fallback
-          setGraph(fallback)
+          measurePerformance('react:setGraph', () => {
+            graphRef.current = fallback
+            setGraph(fallback)
+          })
         }
         resolvePendingLayout()
       }
@@ -352,15 +371,19 @@ export default function useOrgChart(rows) {
   }, [scheduleLayout])
 
   const expandAll = () => {
-    const updates = {}
-    map.forEach((_, k) => { updates[k] = false })
-    setCollapsed(updates)
+    measurePerformance('visibility:expandAll', () => {
+      const updates = {}
+      map.forEach((_, k) => { updates[k] = false })
+      setCollapsed(updates)
+    })
   }
 
   const collapseAll = () => {
-    const updates = {}
-    map.forEach((_, k) => { updates[k] = true })
-    setCollapsed(updates)
+    measurePerformance('visibility:collapseAll', () => {
+      const updates = {}
+      map.forEach((_, k) => { updates[k] = true })
+      setCollapsed(updates)
+    })
   }
 
   const updatePosition = (id, pos) => {
@@ -389,7 +412,9 @@ export default function useOrgChart(rows) {
     view => {
       if (!controls || !view) return
       const { x, y, k } = view
-      controls.setViewport({ x, y, zoom: k }, { duration: 0 })
+      measureViewportUpdate('set', () => {
+        controls.setViewport({ x, y, zoom: k }, { duration: 0 })
+      })
     },
     [controls]
   )
@@ -418,6 +443,30 @@ export default function useOrgChart(rows) {
     return controls.project(point)
   }, [controls])
 
+  const fitView = useCallback(
+    options => {
+      if (!controls) return
+      measureViewportUpdate('fit', () => {
+        controls.fitView(options)
+      })
+    },
+    [controls]
+  )
+
+  const zoomIn = useCallback(() => {
+    if (!controls) return
+    measureViewportUpdate('zoomIn', () => {
+      controls.zoomIn?.()
+    })
+  }, [controls])
+
+  const zoomOut = useCallback(() => {
+    if (!controls) return
+    measureViewportUpdate('zoomOut', () => {
+      controls.zoomOut?.()
+    })
+  }, [controls])
+
   const toScreen = useCallback(point => {
     const viewport = getViewport()
     if (!viewport || !point) return point
@@ -434,6 +483,7 @@ export default function useOrgChart(rows) {
       const prevScreen = hadAnchor ? getNodeScreenPosition(anchorId) : null
 
       await recomputeLayout(scope)
+      await waitForLayoutFrame()
 
       if (hadAnchor && prevScreen) {
         const anchorWorld = getNodeWorldPosition(anchorId)
@@ -477,13 +527,15 @@ export default function useOrgChart(rows) {
       currentManager = manager?.['Manager']?.trim()
     }
     if (Object.keys(updates).length > 0) {
-      setCollapsed(updates)
+      measurePerformance('selection:applyVisibility', () => {
+        setCollapsed(updates)
+      })
     }
 
     const focus = () => {
       const node = graph.nodes.find(n => n.id === targetName)
       if (!node || !controls) return false
-      controls.fitView({ nodes: [node], padding: 0.4, duration: 800 })
+      fitView({ nodes: [node], padding: 0.4, duration: 800 })
       return true
     }
 
@@ -494,7 +546,11 @@ export default function useOrgChart(rows) {
     }
 
     return true
-  }, [map, graph.nodes, controls])
+  }, [map, graph.nodes, controls, fitView])
+
+  useEffect(() => {
+    markPoint('react:commit:graph')
+  }, [graph.nodes, graph.edges])
 
   return {
     map,
@@ -522,6 +578,9 @@ export default function useOrgChart(rows) {
     setViewport,
     getNodeScreenPosition,
     getNodeWorldPosition,
+    fitView,
+    zoomIn,
+    zoomOut,
     toWorld,
     toScreen
   }
