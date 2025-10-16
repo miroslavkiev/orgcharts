@@ -47,15 +47,35 @@ export default function Toolbar({ org }) {
     }
     setVerticalHint('')
     const wasVerticalMode = org.verticalMode
+    const userStart = performance.now()
+    console.log('🔗 [User Action] Vertical chain button clicked')
     perfTracker.start('vertical-chain-complete')
+    
     if (org.verticalMode) {
+      console.log('⬅️ Exiting vertical mode...')
       org.exitVerticalMode()
       await org.relayoutPreservingAnchor(org.lastClickedEmployeeId, 'all')
     } else {
+      console.log('➡️ Entering vertical mode...')
       org.enterVerticalMode(org.lastClickedEmployeeId)
       await org.relayoutPreservingAnchor(org.lastClickedEmployeeId, 'vertical')
     }
-    perfTracker.end('vertical-chain-complete', { mode: wasVerticalMode ? 'exit' : 'enter' })
+    
+    console.log('⏳ Waiting for render...')
+    // Wait for React to finish rendering and browser to paint
+    await new Promise(resolve => {
+      requestAnimationFrame(() => {
+        requestAnimationFrame(() => {
+          const totalTime = performance.now() - userStart
+          console.log(`✅ [User Perceived] Total time: ${totalTime.toFixed(2)}ms`)
+          perfTracker.end('vertical-chain-complete', { 
+            mode: wasVerticalMode ? 'exit' : 'enter',
+            userPerceivedTime: Math.round(totalTime * 100) / 100
+          })
+          resolve()
+        })
+      })
+    })
   }
 
   const handleExpandAll = async () => {

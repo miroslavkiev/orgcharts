@@ -34,7 +34,7 @@ class PerfTracker {
     
     const startMark = this.marks.get(operation)
     if (!startMark) {
-      console.warn(`[PerfTracker] No start mark for operation: ${operation}`)
+      // Silently ignore if no start mark - happens for operations we don't track start for
       return
     }
 
