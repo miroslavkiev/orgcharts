@@ -232,7 +232,18 @@ export default function Toolbar({ org }) {
       </Tooltip>
       <Tooltip label="Show Performance Report" placement="below">
         <button
-          onClick={() => window.perfTracker.logReport()}
+          onClick={() => {
+            try {
+              if (window.perfTracker) {
+                window.perfTracker.logReport()
+                console.log('✅ Report logged above')
+              } else {
+                console.error('❌ perfTracker not found on window')
+              }
+            } catch (e) {
+              console.error('❌ Error logging report:', e)
+            }
+          }}
           aria-label="Show Performance Report"
           style={{ ...iconButtonStyle, fontSize: '16px' }}
         >
@@ -241,7 +252,17 @@ export default function Toolbar({ org }) {
       </Tooltip>
       <Tooltip label="Download Performance Report" placement="below">
         <button
-          onClick={() => window.perfTracker.downloadReport('perf-baseline.json')}
+          onClick={() => {
+            try {
+              if (window.perfTracker) {
+                window.perfTracker.downloadReport('perf-baseline.json')
+              } else {
+                console.error('❌ perfTracker not found on window')
+              }
+            } catch (e) {
+              console.error('❌ Error downloading report:', e)
+            }
+          }}
           aria-label="Download Performance Report"
           style={{ ...iconButtonStyle, fontSize: '16px' }}
         >
