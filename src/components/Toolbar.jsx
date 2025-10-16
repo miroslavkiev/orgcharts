@@ -187,7 +187,9 @@ export default function Toolbar({ org }) {
             style={{
               ...iconButtonStyle,
               opacity: isVerticalDisabled ? 0.5 : 1,
-              cursor: isVerticalDisabled ? 'not-allowed' : 'pointer'
+              cursor: isVerticalDisabled ? 'not-allowed' : 'pointer',
+              border: org.verticalMode ? '2px solid #dc2626' : '2px solid transparent',
+              boxShadow: org.verticalMode ? '0 0 0 1px #dc2626' : 'none'
             }}
           >
             <svg aria-hidden="true" width="18" height="18" viewBox="0 0 24 24">
