@@ -81,7 +81,8 @@ export default function useOrgChart(rows) {
   const selectEmployee = useCallback(id => {
     if (!id) return
     measurePerformance('selection:change', () => {
-      setLastClickedEmployeeId(id)
+      // Toggle selection: if clicking the same employee, deselect it
+      setLastClickedEmployeeId(prev => prev === id ? null : id)
     })
   }, [])
 
@@ -239,7 +240,8 @@ export default function useOrgChart(rows) {
             collapsed: isCollapsed,
             toggle: () => toggleNode(id),
             fromOrphanRoot,
-            select: () => selectEmployee(id)
+            select: () => selectEmployee(id),
+            isSelected: id === lastClickedEmployeeId
           }
         })
         if (parentId) {
@@ -258,7 +260,7 @@ export default function useOrgChart(rows) {
           devLog(`🔄 [Graph Prepared] ${n.length} nodes, ${e.length} edges (verticalMode: ${verticalMode}, allowedIds: ${allowedIdsSet?.size || 'all'})`)
           return { nodes: n, edges: e }
     }),
-    [roots, collapsed, verticalMode, allowedIdsSet]
+    [roots, collapsed, verticalMode, allowedIdsSet, lastClickedEmployeeId]
   )
 
   useEffect(() => {

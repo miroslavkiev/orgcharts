@@ -4,7 +4,7 @@ import { PlusIcon, MinusIcon } from '@heroicons/react/24/outline'
 import avatar from '../assets/avatar.svg'
 
 export default function EmployeeNode({ data }) {
-  const { emp, collapsed, toggle, select } = data
+  const { emp, collapsed, toggle, select, isSelected } = data
   const [imgSrc, setImgSrc] = useState(emp['Photo URL'] || avatar)
   const [show, setShow] = useState(false)
 
@@ -19,6 +19,10 @@ export default function EmployeeNode({ data }) {
         if (select) {
           select()
         }
+      }}
+      style={{
+        border: isSelected ? '3px solid #2563eb' : undefined,
+        boxShadow: isSelected ? '0 0 0 2px #dbeafe' : undefined
       }}
     >
       <Handle type="target" position="top" />
