@@ -47,10 +47,11 @@ export default function Toolbar({ org }) {
     }
   }
 
-  const handleFocus = (e) => {
-    // Clear the field to show full unfiltered dropdown list
+  const handleClearSearch = () => {
     setSearchTerm('')
     setNotFound(false)
+    // Keep focus on the input to show dropdown
+    document.querySelector('input[list="employee-search-list"]')?.focus()
   }
 
   const isVerticalDisabled = !org.lastClickedEmployeeId
@@ -151,21 +152,47 @@ export default function Toolbar({ org }) {
       }}
     >
       <form onSubmit={handleSubmit} style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
-        <input
-          type="text"
-          list="employee-search-list"
-          value={searchTerm}
-          onChange={handleChange}
-          onFocus={handleFocus}
-          placeholder={t('searchPlaceholder')}
-          aria-label={t('searchPlaceholder')}
-          style={{ padding: '6px 8px', borderRadius: 6, border: '1px solid #ccc', minWidth: 200 }}
-        />
-        <datalist id="employee-search-list">
-          {employeeNames.map(name => (
-            <option key={name} value={name} />
-          ))}
-        </datalist>
+        <div style={{ position: 'relative', display: 'inline-block' }}>
+          <input
+            type="text"
+            list="employee-search-list"
+            value={searchTerm}
+            onChange={handleChange}
+            placeholder={t('searchPlaceholder')}
+            aria-label={t('searchPlaceholder')}
+            style={{ padding: '6px 28px 6px 8px', borderRadius: 6, border: '1px solid #ccc', minWidth: 200 }}
+          />
+          {searchTerm && (
+            <button
+              type="button"
+              onClick={handleClearSearch}
+              aria-label="Clear search"
+              style={{
+                position: 'absolute',
+                right: 4,
+                top: '50%',
+                transform: 'translateY(-50%)',
+                background: 'transparent',
+                border: 'none',
+                cursor: 'pointer',
+                fontSize: 18,
+                color: '#666',
+                padding: 4,
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                lineHeight: 1
+              }}
+            >
+              ×
+            </button>
+          )}
+          <datalist id="employee-search-list">
+            {employeeNames.map(name => (
+              <option key={name} value={name} />
+            ))}
+          </datalist>
+        </div>
       </form>
       {notFound && (
         <div style={{ color: '#b91c1c', fontSize: 12 }}>{t('searchNotFound')}</div>
