@@ -166,12 +166,14 @@ export default function Toolbar({ org }) {
           gap: 10,
           flexWrap: 'nowrap',
           overflowX: 'auto',
+          overflowY: 'hidden',
           whiteSpace: 'nowrap',
           alignItems: 'center',
           background: 'rgba(255, 255, 255, 0.95)',
           padding: '8px 16px',
           borderRadius: 12,
-          boxShadow: '0 4px 12px rgba(0, 0, 0, 0.15)'
+          boxShadow: '0 4px 12px rgba(0, 0, 0, 0.15)',
+          maxHeight: '60px'
         }}
       >
       <form onSubmit={handleSubmit} style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
