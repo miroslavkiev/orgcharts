@@ -47,9 +47,9 @@ export default function Toolbar({ org }) {
     }
   }
 
-  const handleFocus = () => {
-    // Clear the search field when user clicks on it to make searching easier
-    setSearchTerm('')
+  const handleFocus = (e) => {
+    // Select all text when user clicks on it - allows dropdown to show and easy replacement
+    e.target.select()
     setNotFound(false)
   }
 
