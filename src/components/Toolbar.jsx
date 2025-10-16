@@ -30,6 +30,8 @@ export default function Toolbar({ org }) {
     }
     const found = org.focusEmployee(searchTerm)
     setNotFound(!found)
+    // Remove focus from search field after selection
+    e.target.querySelector('input')?.blur()
   }
 
   const handleChange = e => {
@@ -44,6 +46,8 @@ export default function Toolbar({ org }) {
     if (value && employeeNames.includes(value)) {
       const found = org.focusEmployee(value)
       setNotFound(!found)
+      // Remove focus from search field after selection
+      e.target.blur()
     }
   }
 
