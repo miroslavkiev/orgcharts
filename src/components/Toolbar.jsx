@@ -50,8 +50,16 @@ export default function Toolbar({ org }) {
   const handleClearSearch = () => {
     setSearchTerm('')
     setNotFound(false)
-    // Keep focus on the input to show dropdown
-    document.querySelector('input[list="employee-search-list"]')?.focus()
+    // Focus and trigger dropdown by simulating click
+    const input = document.querySelector('input[list="employee-search-list"]')
+    if (input) {
+      input.focus()
+      // Trigger dropdown by dispatching input event
+      setTimeout(() => {
+        input.dispatchEvent(new Event('input', { bubbles: true }))
+        input.click()
+      }, 10)
+    }
   }
 
   const isVerticalDisabled = !org.lastClickedEmployeeId
@@ -160,7 +168,7 @@ export default function Toolbar({ org }) {
             onChange={handleChange}
             placeholder={t('searchPlaceholder')}
             aria-label={t('searchPlaceholder')}
-            style={{ padding: '6px 28px 6px 8px', borderRadius: 6, border: '1px solid #ccc', minWidth: 200 }}
+            style={{ padding: '6px 40px 6px 8px', borderRadius: 6, border: '1px solid #ccc', minWidth: 200 }}
           />
           {searchTerm && (
             <button
@@ -169,20 +177,24 @@ export default function Toolbar({ org }) {
               aria-label="Clear search"
               style={{
                 position: 'absolute',
-                right: 4,
+                right: 20,
                 top: '50%',
                 transform: 'translateY(-50%)',
                 background: 'transparent',
                 border: 'none',
                 cursor: 'pointer',
-                fontSize: 18,
-                color: '#666',
-                padding: 4,
+                fontSize: 20,
+                color: '#999',
+                padding: '2px 4px',
                 display: 'flex',
                 alignItems: 'center',
                 justifyContent: 'center',
-                lineHeight: 1
+                lineHeight: 1,
+                height: 20,
+                width: 20
               }}
+              onMouseEnter={(e) => e.currentTarget.style.color = '#333'}
+              onMouseLeave={(e) => e.currentTarget.style.color = '#999'}
             >
               ×
             </button>
