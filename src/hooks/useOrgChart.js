@@ -106,6 +106,7 @@ export default function useOrgChart(rows) {
   const updateVerticalAllowed = useCallback(id => {
     if (!id) return
     perfTracker.start('vertical-update')
+    let nodeCount = 0
     measurePerformance('vertical:update', () => {
       const cache = verticalCacheRef.current
       const forestSignature = signature
@@ -133,10 +134,11 @@ export default function useOrgChart(rows) {
       }
 
       if (!allowedArray || allowedArray.length === 0) {
-        perfTracker.end('vertical-update', { nodeCount: 0 })
+        nodeCount = 0
         return
       }
 
+      nodeCount = allowedArray.length
       measurePerformance('vertical:applyVisibility', () => {
         batchUpdates(() => {
           if (collapsedUpdates) {
@@ -147,7 +149,7 @@ export default function useOrgChart(rows) {
         })
       })
     })
-    perfTracker.end('vertical-update', { nodeCount: allowedArray?.length || 0 })
+    perfTracker.end('vertical-update', { nodeCount })
   }, [getDescendants, getManagersPath, setCollapsed, signature])
 
   const enterVerticalMode = useCallback(id => {

@@ -46,6 +46,7 @@ export default function Toolbar({ org }) {
       return
     }
     setVerticalHint('')
+    const wasVerticalMode = org.verticalMode
     perfTracker.start('vertical-chain-complete')
     if (org.verticalMode) {
       org.exitVerticalMode()
@@ -54,7 +55,7 @@ export default function Toolbar({ org }) {
       org.enterVerticalMode(org.lastClickedEmployeeId)
       await org.relayoutPreservingAnchor(org.lastClickedEmployeeId, 'vertical')
     }
-    perfTracker.end('vertical-chain-complete', { mode: org.verticalMode ? 'exit' : 'enter' })
+    perfTracker.end('vertical-chain-complete', { mode: wasVerticalMode ? 'exit' : 'enter' })
   }
 
   const handleExpandAll = async () => {
