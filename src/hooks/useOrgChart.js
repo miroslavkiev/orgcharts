@@ -140,10 +140,17 @@ export default function useOrgChart(rows) {
       nodeCount = allowedArray.length
       measurePerformance('vertical:applyVisibility', () => {
         batchUpdates(() => {
-          if (collapsedUpdates) {
+          if (collapsedUpdates && Object.keys(collapsedUpdates).length > 0) {
             setCollapsed(collapsedUpdates)
           }
-          setVerticalAllowedIds(allowedArray)
+          setVerticalAllowedIds(prev => {
+            // Only update if different to prevent unnecessary re-renders
+            if (prev && prev.length === allowedArray.length && 
+                prev.every((id, i) => id === allowedArray[i])) {
+              return prev
+            }
+            return allowedArray
+          })
           setVerticalFocusId(id)
         })
       })
@@ -180,7 +187,8 @@ export default function useOrgChart(rows) {
     if (verticalMode && lastClickedEmployeeId) {
       updateVerticalAllowed(lastClickedEmployeeId)
     }
-  }, [lastClickedEmployeeId, updateVerticalAllowed, verticalMode])
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [lastClickedEmployeeId, verticalMode])
 
   useEffect(() => {
     if (verticalMode && verticalFocusId) {
@@ -190,7 +198,8 @@ export default function useOrgChart(rows) {
         updateVerticalAllowed(verticalFocusId)
       }
     }
-  }, [exitVerticalMode, map, updateVerticalAllowed, verticalFocusId, verticalMode])
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [verticalFocusId, verticalMode])
 
   useEffect(() => {
     if (lastClickedEmployeeId && !map.has(lastClickedEmployeeId)) {
