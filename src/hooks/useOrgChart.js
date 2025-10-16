@@ -89,9 +89,9 @@ export default function useOrgChart(rows) {
     return new Set(verticalAllowedIds)
   }, [verticalAllowedIds])
 
-  const toggleNode = id => {
-    setCollapsed({ [id]: !collapsed[id] })
-  }
+  const toggleNode = useCallback(id => {
+    setCollapsed(prev => ({ ...prev, [id]: !prev[id] }))
+  }, [])
 
   const getManagersPath = useCallback(id => {
     if (!id) return []
@@ -248,7 +248,7 @@ export default function useOrgChart(rows) {
       console.log(`🔄 [Graph Prepared] ${n.length} nodes, ${e.length} edges (verticalMode: ${verticalMode}, allowedIds: ${allowedIdsSet?.size || 'all'})`)
       return { nodes: n, edges: e }
     }),
-    [roots, collapsed, verticalMode, allowedIdsSet, toggleNode, selectEmployee]
+    [roots, collapsed, verticalMode, allowedIdsSet]
   )
 
   useEffect(() => {
