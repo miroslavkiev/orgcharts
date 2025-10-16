@@ -10,6 +10,7 @@ export default function Toolbar({ org }) {
   const [searchTerm, setSearchTerm] = useState('')
   const [notFound, setNotFound] = useState(false)
   const [verticalHint, setVerticalHint] = useState('')
+  const [showFilterWarning, setShowFilterWarning] = useState(false)
   const iconButtonStyle = {
     padding: '6px 12px',
     display: 'flex',
@@ -19,8 +20,15 @@ export default function Toolbar({ org }) {
 
   const employeeNames = useMemo(() => {
     if (!org?.map) return []
+    // Filter to only visible employees when in vertical mode
+    if (org.verticalMode && org.verticalAllowedIds) {
+      const allowedSet = new Set(org.verticalAllowedIds)
+      return Array.from(org.map.keys())
+        .filter(name => allowedSet.has(name))
+        .sort((a, b) => a.localeCompare(b))
+    }
     return Array.from(org.map.keys()).sort((a, b) => a.localeCompare(b))
-  }, [org.map])
+  }, [org.map, org.verticalMode, org.verticalAllowedIds])
 
   const handleSubmit = e => {
     e.preventDefault()
@@ -136,26 +144,36 @@ export default function Toolbar({ org }) {
     }
   }, [org.lastClickedEmployeeId])
 
+  useEffect(() => {
+    // Show filter warning when vertical mode is enabled
+    if (org.verticalMode) {
+      setShowFilterWarning(true)
+    } else {
+      setShowFilterWarning(false)
+    }
+  }, [org.verticalMode])
+
   return (
-    <div
-      style={{
-        position: 'fixed',
-        top: 10,
-        left: '50%',
-        transform: 'translateX(-50%)',
-        zIndex: 10,
-        display: 'flex',
-        gap: 10,
-        flexWrap: 'nowrap',
-        overflowX: 'auto',
-        whiteSpace: 'nowrap',
-        alignItems: 'center',
-        background: 'rgba(255, 255, 255, 0.95)',
-        padding: '8px 16px',
-        borderRadius: 12,
-        boxShadow: '0 4px 12px rgba(0, 0, 0, 0.15)'
-      }}
-    >
+    <>
+      <div
+        style={{
+          position: 'fixed',
+          top: 10,
+          left: '50%',
+          transform: 'translateX(-50%)',
+          zIndex: 10,
+          display: 'flex',
+          gap: 10,
+          flexWrap: 'nowrap',
+          overflowX: 'auto',
+          whiteSpace: 'nowrap',
+          alignItems: 'center',
+          background: 'rgba(255, 255, 255, 0.95)',
+          padding: '8px 16px',
+          borderRadius: 12,
+          boxShadow: '0 4px 12px rgba(0, 0, 0, 0.15)'
+        }}
+      >
       <form onSubmit={handleSubmit} style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
         <input
           type="text"
@@ -319,6 +337,49 @@ export default function Toolbar({ org }) {
           <option value="uk">UK</option>
         </select>
       </Tooltip>
-    </div>
+      </div>
+      
+      {showFilterWarning && org.verticalMode && (
+        <div
+          style={{
+            position: 'fixed',
+            bottom: 0,
+            left: 0,
+            right: 0,
+            zIndex: 10,
+            background: '#fee2e2',
+            borderTop: '2px solid #dc2626',
+            padding: '12px 20px',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            gap: 12,
+            boxShadow: '0 -4px 12px rgba(0, 0, 0, 0.1)'
+          }}
+        >
+          <div style={{ color: '#991b1b', fontWeight: 500, fontSize: 14 }}>
+            ⚠️ The list of employees is filtered. To see the whole list, disable "Vertical chain" function.
+          </div>
+          <button
+            onClick={() => setShowFilterWarning(false)}
+            aria-label="Close warning"
+            style={{
+              background: 'transparent',
+              border: 'none',
+              cursor: 'pointer',
+              fontSize: 20,
+              color: '#991b1b',
+              padding: 4,
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              lineHeight: 1
+            }}
+          >
+            ×
+          </button>
+        </div>
+      )}
+    </>
   )
 }

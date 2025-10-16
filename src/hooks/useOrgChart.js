@@ -607,6 +607,7 @@ export default function useOrgChart(rows) {
     lastClickedEmployeeId,
     selectEmployee,
     verticalMode,
+    verticalAllowedIds,
     enterVerticalMode,
     exitVerticalMode,
     verticalFocusId,
