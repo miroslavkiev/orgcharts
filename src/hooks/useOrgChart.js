@@ -245,6 +245,7 @@ export default function useOrgChart(rows) {
       markPoint('layout:edgeRouting:start')
       markPoint('layout:edgeRouting:end')
 
+      console.log(`🔄 [Graph Prepared] ${n.length} nodes, ${e.length} edges (verticalMode: ${verticalMode}, allowedIds: ${allowedIdsSet?.size || 'all'})`)
       return { nodes: n, edges: e }
     }),
     [roots, collapsed, verticalMode, allowedIdsSet, toggleNode, selectEmployee]
@@ -291,13 +292,24 @@ export default function useOrgChart(rows) {
 
       try {
         const layoutNodeMap = new Map(layoutNodes.map(n => [n.id, n]))
+        const nodeCount = layoutNodes.length
+        const edgeCount = layoutEdges.length
+        
+        if (nodeCount > 0) {
+          console.log(`📐 [Layout] Starting ELK: ${nodeCount} nodes, ${edgeCount} edges, scope: ${scope}`)
+        }
+        
         perfTracker.start('layout-elk')
         const res = await measurePerformance('layout:elk', () => elk.layout(graphDef))
         perfTracker.end('layout-elk', { 
-          nodeCount: layoutNodes.length,
-          edgeCount: layoutEdges.length,
+          nodeCount,
+          edgeCount,
           scope: scope
         })
+        
+        if (nodeCount > 0) {
+          console.log(`✅ [Layout] ELK completed for ${nodeCount} nodes`)
+        }
         const positions = {}
         res.children?.forEach(c => { positions[c.id] = { x: c.x, y: c.y } })
 
