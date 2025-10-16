@@ -47,6 +47,12 @@ export default function Toolbar({ org }) {
     }
   }
 
+  const handleFocus = () => {
+    // Clear the search field when user clicks on it to make searching easier
+    setSearchTerm('')
+    setNotFound(false)
+  }
+
   const isVerticalDisabled = !org.lastClickedEmployeeId
 
   const handleVerticalToggle = async () => {
@@ -150,6 +156,7 @@ export default function Toolbar({ org }) {
           list="employee-search-list"
           value={searchTerm}
           onChange={handleChange}
+          onFocus={handleFocus}
           placeholder={t('searchPlaceholder')}
           aria-label={t('searchPlaceholder')}
           style={{ padding: '6px 8px', borderRadius: 6, border: '1px solid #ccc', minWidth: 200 }}
