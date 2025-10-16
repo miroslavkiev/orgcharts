@@ -64,6 +64,11 @@ export default function Toolbar({ org }) {
       await org.relayoutPreservingAnchor(org.lastClickedEmployeeId, 'vertical')
     }
     
+    // Auto-fit the view after vertical chain completes
+    // Wait a frame to ensure layout is complete
+    await new Promise(resolve => requestAnimationFrame(resolve))
+    org.fitView()
+    
     if (ENABLE_PERFORMANCE_TRACKING) {
       devLog('⏳ Waiting for render...')
       // Wait for React to finish rendering and browser to paint
