@@ -3,6 +3,7 @@ import { useTranslation } from 'react-i18next'
 import { ArrowsPointingOutIcon } from '@heroicons/react/24/outline'
 import Tooltip from './Tooltip'
 import perfTracker from '../utils/perfTracker'
+import { devLog, ENABLE_PERFORMANCE_TRACKING } from '../utils/featureFlags'
 
 export default function Toolbar({ org }) {
   const { t, i18n } = useTranslation()
@@ -47,35 +48,39 @@ export default function Toolbar({ org }) {
     }
     setVerticalHint('')
     const wasVerticalMode = org.verticalMode
-    const userStart = performance.now()
-    console.log('🔗 [User Action] Vertical chain button clicked')
-    perfTracker.start('vertical-chain-complete')
+    const userStart = ENABLE_PERFORMANCE_TRACKING ? performance.now() : 0
+    devLog('🔗 [User Action] Vertical chain button clicked')
+    if (ENABLE_PERFORMANCE_TRACKING) {
+      perfTracker.start('vertical-chain-complete')
+    }
     
     if (org.verticalMode) {
-      console.log('⬅️ Exiting vertical mode...')
+      devLog('⬅️ Exiting vertical mode...')
       org.exitVerticalMode()
       await org.relayoutPreservingAnchor(org.lastClickedEmployeeId, 'all')
     } else {
-      console.log('➡️ Entering vertical mode...')
+      devLog('➡️ Entering vertical mode...')
       org.enterVerticalMode(org.lastClickedEmployeeId)
       await org.relayoutPreservingAnchor(org.lastClickedEmployeeId, 'vertical')
     }
     
-    console.log('⏳ Waiting for render...')
-    // Wait for React to finish rendering and browser to paint
-    await new Promise(resolve => {
-      requestAnimationFrame(() => {
+    if (ENABLE_PERFORMANCE_TRACKING) {
+      devLog('⏳ Waiting for render...')
+      // Wait for React to finish rendering and browser to paint
+      await new Promise(resolve => {
         requestAnimationFrame(() => {
-          const totalTime = performance.now() - userStart
-          console.log(`✅ [User Perceived] Total time: ${totalTime.toFixed(2)}ms`)
-          perfTracker.end('vertical-chain-complete', { 
-            mode: wasVerticalMode ? 'exit' : 'enter',
-            userPerceivedTime: Math.round(totalTime * 100) / 100
+          requestAnimationFrame(() => {
+            const totalTime = performance.now() - userStart
+            devLog(`✅ [User Perceived] Total time: ${totalTime.toFixed(2)}ms`)
+            perfTracker.end('vertical-chain-complete', { 
+              mode: wasVerticalMode ? 'exit' : 'enter',
+              userPerceivedTime: Math.round(totalTime * 100) / 100
+            })
+            resolve()
           })
-          resolve()
         })
       })
-    })
+    }
   }
 
   const handleExpandAll = async () => {
@@ -250,45 +255,36 @@ export default function Toolbar({ org }) {
           </svg>
         </button>
       </Tooltip>
-      <Tooltip label="Show Performance Report" placement="below">
-        <button
-          onClick={() => {
-            try {
-              if (window.perfTracker) {
-                window.perfTracker.logReport()
-                console.log('✅ Report logged above')
-              } else {
-                console.error('❌ perfTracker not found on window')
-              }
-            } catch (e) {
-              console.error('❌ Error logging report:', e)
-            }
-          }}
-          aria-label="Show Performance Report"
-          style={{ ...iconButtonStyle, fontSize: '16px' }}
-        >
-          📊
-        </button>
-      </Tooltip>
-      <Tooltip label="Download Performance Report" placement="below">
-        <button
-          onClick={() => {
-            try {
-              if (window.perfTracker) {
-                window.perfTracker.downloadReport('perf-baseline.json')
-              } else {
-                console.error('❌ perfTracker not found on window')
-              }
-            } catch (e) {
-              console.error('❌ Error downloading report:', e)
-            }
-          }}
-          aria-label="Download Performance Report"
-          style={{ ...iconButtonStyle, fontSize: '16px' }}
-        >
-          💾
-        </button>
-      </Tooltip>
+      {ENABLE_PERFORMANCE_TRACKING && (
+        <>
+          <Tooltip label="Show Performance Report" placement="below">
+            <button
+              onClick={() => {
+                if (window.perfTracker) {
+                  window.perfTracker.logReport()
+                }
+              }}
+              aria-label="Show Performance Report"
+              style={{ ...iconButtonStyle, fontSize: '16px' }}
+            >
+              📊
+            </button>
+          </Tooltip>
+          <Tooltip label="Download Performance Report" placement="below">
+            <button
+              onClick={() => {
+                if (window.perfTracker) {
+                  window.perfTracker.downloadReport('perf-baseline.json')
+                }
+              }}
+              aria-label="Download Performance Report"
+              style={{ ...iconButtonStyle, fontSize: '16px' }}
+            >
+              💾
+            </button>
+          </Tooltip>
+        </>
+      )}
       <Tooltip label={t('toolbar.language')} placement="below">
         <select
           value={i18n.language}

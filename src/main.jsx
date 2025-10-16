@@ -5,14 +5,17 @@ import './i18n'
 import './style.css'
 import { Toaster } from 'react-hot-toast'
 import perfTracker from './utils/perfTracker'
+import { ENABLE_PERFORMANCE_TRACKING } from './utils/featureFlags'
 
 // Track initial load metrics when DOM is ready
-if (document.readyState === 'complete') {
-  perfTracker.trackPageLoad()
-} else {
-  window.addEventListener('load', () => {
+if (ENABLE_PERFORMANCE_TRACKING) {
+  if (document.readyState === 'complete') {
     perfTracker.trackPageLoad()
-  })
+  } else {
+    window.addEventListener('load', () => {
+      perfTracker.trackPageLoad()
+    })
+  }
 }
 
 ReactDOM.createRoot(document.getElementById('root')).render(

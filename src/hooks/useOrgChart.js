@@ -5,6 +5,7 @@ import { batchUpdates } from '../utils/batch'
 import { measurePerformance, markPoint, setPerformanceThreshold } from '../utils/performance'
 import { measureViewportUpdate, waitForLayoutFrame } from '../utils/viewport'
 import perfTracker from '../utils/perfTracker'
+import { devLog, ENABLE_PERFORMANCE_TRACKING } from '../utils/featureFlags'
 
 const BASE_HEIGHT = 140
 const LINE_HEIGHT = 22
@@ -251,11 +252,11 @@ export default function useOrgChart(rows) {
 
       roots.forEach(r => traverse(r, null, r.noManager))
 
-      markPoint('layout:edgeRouting:start')
-      markPoint('layout:edgeRouting:end')
+          markPoint('layout:edgeRouting:start')
+          markPoint('layout:edgeRouting:end')
 
-      console.log(`🔄 [Graph Prepared] ${n.length} nodes, ${e.length} edges (verticalMode: ${verticalMode}, allowedIds: ${allowedIdsSet?.size || 'all'})`)
-      return { nodes: n, edges: e }
+          devLog(`🔄 [Graph Prepared] ${n.length} nodes, ${e.length} edges (verticalMode: ${verticalMode}, allowedIds: ${allowedIdsSet?.size || 'all'})`)
+          return { nodes: n, edges: e }
     }),
     [roots, collapsed, verticalMode, allowedIdsSet]
   )
@@ -305,19 +306,23 @@ export default function useOrgChart(rows) {
         const edgeCount = layoutEdges.length
         
         if (nodeCount > 0) {
-          console.log(`📐 [Layout] Starting ELK: ${nodeCount} nodes, ${edgeCount} edges, scope: ${scope}`)
+          devLog(`📐 [Layout] Starting ELK: ${nodeCount} nodes, ${edgeCount} edges, scope: ${scope}`)
         }
         
-        perfTracker.start('layout-elk')
+        if (ENABLE_PERFORMANCE_TRACKING) {
+          perfTracker.start('layout-elk')
+        }
         const res = await measurePerformance('layout:elk', () => elk.layout(graphDef))
-        perfTracker.end('layout-elk', { 
-          nodeCount,
-          edgeCount,
-          scope: scope
-        })
+        if (ENABLE_PERFORMANCE_TRACKING) {
+          perfTracker.end('layout-elk', { 
+            nodeCount,
+            edgeCount,
+            scope: scope
+          })
+        }
         
         if (nodeCount > 0) {
-          console.log(`✅ [Layout] ELK completed for ${nodeCount} nodes`)
+          devLog(`✅ [Layout] ELK completed for ${nodeCount} nodes`)
         }
         const positions = {}
         res.children?.forEach(c => { positions[c.id] = { x: c.x, y: c.y } })

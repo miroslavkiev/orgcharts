@@ -3,6 +3,8 @@
  * Tracks key metrics during app lifecycle and vertical chain execution
  */
 
+import { ENABLE_PERFORMANCE_TRACKING } from './featureFlags'
+
 class PerfTracker {
   constructor() {
     this.metrics = {
@@ -22,7 +24,7 @@ class PerfTracker {
 
   // Mark start of an operation
   start(operation) {
-    if (typeof performance === 'undefined') return
+    if (!ENABLE_PERFORMANCE_TRACKING || typeof performance === 'undefined') return
     const markName = `${operation}-start`
     performance.mark(markName)
     this.marks.set(operation, markName)
@@ -30,7 +32,7 @@ class PerfTracker {
 
   // Mark end of operation and record duration
   end(operation, metadata = {}) {
-    if (typeof performance === 'undefined') return
+    if (!ENABLE_PERFORMANCE_TRACKING || typeof performance === 'undefined') return
     
     const startMark = this.marks.get(operation)
     if (!startMark) {
@@ -80,7 +82,7 @@ class PerfTracker {
 
   // Track initial page load metrics
   trackPageLoad() {
-    if (typeof performance === 'undefined' || !performance.timing) return
+    if (!ENABLE_PERFORMANCE_TRACKING || typeof performance === 'undefined' || !performance.timing) return
 
     const timing = performance.timing
     const navigation = performance.getEntriesByType('navigation')[0]
@@ -152,6 +154,10 @@ class PerfTracker {
 
   // Log report to console
   logReport() {
+    if (!ENABLE_PERFORMANCE_TRACKING) {
+      console.log('⚠️ Performance tracking is disabled. Enable it by setting VITE_ENABLE_PERF_TRACKING=true')
+      return
+    }
     const report = this.getReport()
     
     console.group('📊 Performance Report')
@@ -204,6 +210,10 @@ class PerfTracker {
 
   // Download report as JSON file
   downloadReport(filename = 'perf-baseline.json') {
+    if (!ENABLE_PERFORMANCE_TRACKING) {
+      console.log('⚠️ Performance tracking is disabled. Enable it by setting VITE_ENABLE_PERF_TRACKING=true')
+      return
+    }
     const json = this.exportJSON()
     const blob = new Blob([json], { type: 'application/json' })
     const url = URL.createObjectURL(blob)
