@@ -4,6 +4,7 @@ import { buildForest, computeManagersPath, collectDescendants } from '../utils/t
 import { batchUpdates } from '../utils/batch'
 import { measurePerformance, markPoint, setPerformanceThreshold } from '../utils/performance'
 import { measureViewportUpdate, waitForLayoutFrame } from '../utils/viewport'
+import perfTracker from '../utils/perfTracker'
 
 const BASE_HEIGHT = 140
 const LINE_HEIGHT = 22
@@ -104,6 +105,7 @@ export default function useOrgChart(rows) {
 
   const updateVerticalAllowed = useCallback(id => {
     if (!id) return
+    perfTracker.start('vertical-update')
     measurePerformance('vertical:update', () => {
       const cache = verticalCacheRef.current
       const forestSignature = signature
@@ -131,6 +133,7 @@ export default function useOrgChart(rows) {
       }
 
       if (!allowedArray || allowedArray.length === 0) {
+        perfTracker.end('vertical-update', { nodeCount: 0 })
         return
       }
 
@@ -144,6 +147,7 @@ export default function useOrgChart(rows) {
         })
       })
     })
+    perfTracker.end('vertical-update', { nodeCount: allowedArray?.length || 0 })
   }, [getDescendants, getManagersPath, setCollapsed, signature])
 
   const enterVerticalMode = useCallback(id => {
@@ -287,7 +291,13 @@ export default function useOrgChart(rows) {
 
       try {
         const layoutNodeMap = new Map(layoutNodes.map(n => [n.id, n]))
+        perfTracker.start('layout-elk')
         const res = await measurePerformance('layout:elk', () => elk.layout(graphDef))
+        perfTracker.end('layout-elk', { 
+          nodeCount: layoutNodes.length,
+          edgeCount: layoutEdges.length,
+          scope: scope
+        })
         const positions = {}
         res.children?.forEach(c => { positions[c.id] = { x: c.x, y: c.y } })
 

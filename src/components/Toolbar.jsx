@@ -2,6 +2,7 @@ import React, { useEffect, useMemo, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { ArrowsPointingOutIcon } from '@heroicons/react/24/outline'
 import Tooltip from './Tooltip'
+import perfTracker from '../utils/perfTracker'
 
 export default function Toolbar({ org }) {
   const { t, i18n } = useTranslation()
@@ -45,6 +46,7 @@ export default function Toolbar({ org }) {
       return
     }
     setVerticalHint('')
+    perfTracker.start('vertical-chain-complete')
     if (org.verticalMode) {
       org.exitVerticalMode()
       await org.relayoutPreservingAnchor(org.lastClickedEmployeeId, 'all')
@@ -52,6 +54,7 @@ export default function Toolbar({ org }) {
       org.enterVerticalMode(org.lastClickedEmployeeId)
       await org.relayoutPreservingAnchor(org.lastClickedEmployeeId, 'vertical')
     }
+    perfTracker.end('vertical-chain-complete', { mode: org.verticalMode ? 'exit' : 'enter' })
   }
 
   const handleExpandAll = async () => {
@@ -224,6 +227,24 @@ export default function Toolbar({ org }) {
               strokeLinecap="round"
             />
           </svg>
+        </button>
+      </Tooltip>
+      <Tooltip label="Show Performance Report" placement="below">
+        <button
+          onClick={() => window.perfTracker.logReport()}
+          aria-label="Show Performance Report"
+          style={{ ...iconButtonStyle, fontSize: '16px' }}
+        >
+          📊
+        </button>
+      </Tooltip>
+      <Tooltip label="Download Performance Report" placement="below">
+        <button
+          onClick={() => window.perfTracker.downloadReport('perf-baseline.json')}
+          aria-label="Download Performance Report"
+          style={{ ...iconButtonStyle, fontSize: '16px' }}
+        >
+          💾
         </button>
       </Tooltip>
       <Tooltip label={t('toolbar.language')} placement="below">
