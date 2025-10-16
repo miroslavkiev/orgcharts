@@ -48,8 +48,8 @@ export default function Toolbar({ org }) {
   }
 
   const handleFocus = (e) => {
-    // Select all text when user clicks on it - allows dropdown to show and easy replacement
-    e.target.select()
+    // Clear the field to show full unfiltered dropdown list
+    setSearchTerm('')
     setNotFound(false)
   }
 
