@@ -65,9 +65,9 @@ export default function Toolbar({ org }) {
     }
     
     // Auto-fit the view after vertical chain completes
-    // Wait a frame to ensure layout is complete
-    await new Promise(resolve => requestAnimationFrame(resolve))
-    org.fitView()
+    // Wait for ReactFlow to finish rendering the new nodes (need multiple frames + small delay)
+    await new Promise(resolve => setTimeout(resolve, 100))
+    org.fitView({ duration: 300 })
     
     if (ENABLE_PERFORMANCE_TRACKING) {
       devLog('⏳ Waiting for render...')
