@@ -17,6 +17,7 @@ class PerfTracker {
       }
     }
     this.marks = new Map()
+    this.maxOperations = 100 // Limit operations to prevent huge files
   }
 
   // Mark start of an operation
@@ -52,13 +53,17 @@ class PerfTracker {
         ...metadata
       }
 
-      // Store in appropriate category
+      // Store in appropriate category (with limits to prevent huge files)
       if (operation.startsWith('initial-')) {
         this.metrics.initialLoad[operation] = record
       } else if (operation.includes('vertical')) {
-        this.metrics.verticalChain.push(record)
+        if (this.metrics.verticalChain.length < this.maxOperations) {
+          this.metrics.verticalChain.push(record)
+        }
       } else if (operation.includes('layout') || operation.includes('elk')) {
-        this.metrics.layoutOperations.push(record)
+        if (this.metrics.layoutOperations.length < this.maxOperations) {
+          this.metrics.layoutOperations.push(record)
+        }
       }
 
       // Cleanup

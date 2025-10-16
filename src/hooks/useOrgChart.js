@@ -105,7 +105,6 @@ export default function useOrgChart(rows) {
 
   const updateVerticalAllowed = useCallback(id => {
     if (!id) return
-    perfTracker.start('vertical-update')
     let nodeCount = 0
     measurePerformance('vertical:update', () => {
       const cache = verticalCacheRef.current
@@ -149,7 +148,6 @@ export default function useOrgChart(rows) {
         })
       })
     })
-    perfTracker.end('vertical-update', { nodeCount })
   }, [getDescendants, getManagersPath, setCollapsed, signature])
 
   const enterVerticalMode = useCallback(id => {
