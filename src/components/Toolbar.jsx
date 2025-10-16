@@ -33,9 +33,17 @@ export default function Toolbar({ org }) {
   }
 
   const handleChange = e => {
-    setSearchTerm(e.target.value)
+    const value = e.target.value
+    setSearchTerm(value)
     if (notFound) {
       setNotFound(false)
+    }
+    
+    // Auto-trigger search when user selects from dropdown
+    // Check if the value exactly matches an employee name
+    if (value && employeeNames.includes(value)) {
+      const found = org.focusEmployee(value)
+      setNotFound(!found)
     }
   }
 
@@ -151,11 +159,6 @@ export default function Toolbar({ org }) {
             <option key={name} value={name} />
           ))}
         </datalist>
-        <Tooltip label={t('toolbar.search')}>
-          <button type="submit" aria-label={t('toolbar.search')} style={{ padding: '6px 12px' }}>
-            {t('search')}
-          </button>
-        </Tooltip>
       </form>
       {notFound && (
         <div style={{ color: '#b91c1c', fontSize: 12 }}>{t('searchNotFound')}</div>
